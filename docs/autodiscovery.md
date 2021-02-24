@@ -11,7 +11,7 @@ For reference purposes, the following are examples of autodiscovery messages pub
 **Autodiscovery:**  
 Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=True`
 
-```json
+```jsonc
 {
     "ip": "x.x.x.x",                                                // IP Address
     "dn": "Tasmota",                                                // Device Name 
@@ -53,7 +53,7 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=True`
 ```
 
 Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
-```json
+```jsonc
 {
     "sn": {
         "Time":"2021-02-23T18:44:24"
@@ -69,7 +69,7 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
 **Autodiscovery:**  
 Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=false`
 
-```json
+```jsonc
 {
     "ip": "x.x.x.x",
     "dn": "Huzzah 1",
@@ -111,7 +111,7 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=false`
 ```
 
 Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
-```json
+```jsonc
 {
     "sn": {
         "Time":"2021-02-23T18:44:24"

@@ -10,7 +10,7 @@ For reference purposes, the following are examples of state messages published b
 **State:**  
 Topic: `tele/huzzah_1/state`, `retain=false`
 
-```json
+```jsonc
 {
     "Time": "2021-02-23T19:49:19",
     "Uptime": "0T01:05:10",
@@ -42,7 +42,7 @@ Topic: `tele/huzzah_1/state`, `retain=false`
 **State:**  
 Topic: `tele/huzzah_1/state`, `retain=false`
 
-```json
+```jsonc
 {
     "Time": "2021-02-24T15:57:44",
     "Uptime": "0T10:15:10",
