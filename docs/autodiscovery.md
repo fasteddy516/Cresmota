@@ -19,8 +19,8 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=True`
     "hn": "tasmota-huzzah",                                         // Host Name
     "mac": "xxxxxxxxxxxx",                                          // Full MAC as Device ID
     "md": "Huzzah",                                                 // Module or Template Name
-    "ty": 0,                                                        // Flag for TuyaMCU devices
-    "if": 0,                                                        // Flag for Ifan devices
+    "ty": 0,                                                        // Flag for TuyaMCU devices (Module = 54-Tuya MCU or 57-SK03 Outdoor)
+    "if": 0,                                                        // Flag for Ifan devices (Module = 44-Sonoff iFan02 or 71-Sonoff iFan03)
     "ofln": "Offline",                                              // Payload Offline
     "onln": "Online",                                               // Payload Online
     "state": ["OFF", "ON", "TOGGLE", "HOLD"],                       // State Text
@@ -28,10 +28,10 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=True`
     "t": "huzzah_1",                                                // Topic
     "ft": "%prefix%/%topic%/",                                      // Full Topic
     "tp": ["cmnd", "stat", "tele"],                                 // Topic Prefixes
-    "rl": [1, 0, 0, 0, 0, 0, 0, 0],                                 // Inputs / Outputs
-    "swc": [-1, -1, -1, -1, -1, -1, -1, -1],                        // Inputs / Outputs
-    "swn": [null, null, null, null, null, null, null, null],        // Inputs / Outputs
-    "btn": [0, 0, 0, 0, 0, 0, 0, 0],                                // Inputs / Outputs
+    "rl": [1, 0, 0, 0, 0, 0, 0, 0],                                 // Relays (3=Shutter, 2=Light, 1=Basic, 0=None)
+    "swc": [-1, -1, -1, -1, -1, -1, -1, -1],                        // Switches (-1=None, 0=Toggle, 1=Follow, 2=-Follow, 3=Pushbutton, 4=-Pushbutton, 5=PB_Hold, 6=-PB_Hold, 7=PB_Toggle, 8=Toggle_Multi, 9=Follow_Multi, 10=-Follow_Multi, 11=Pushhold_Multi, 12=-Pushhold_Multi, 13=Push_On, 14=-Push_On, 15=Push_Ignore) (Tied to SetOption114)
+    "swn": [null, null, null, null, null, null, null, null],        // Switch Name? (Return of GetSwitchText(i).c_str()) (Tied to SetOption114)
+    "btn": [0, 0, 0, 0, 0, 0, 0, 0],                                // Button (0=Disable, 1=Enable) (Tied to SetOption73)
     "so": {                                                         // SetOptions
         "4": 0,     // (MQTT) Switch between RESULT (0) or COMMAND (1)
         "11": 0,    // (Button) Swap (1) button single and double press functionality
@@ -45,9 +45,9 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=True`
         "114": 0,   // (Switch) Detach Switches from relays and enable MQTT action state for all the SwitchModes (1)
         "117": 0    // (Light) run fading at fixed duration instead of fixed slew rate
     },
-    "lk": 1,                                                        // lighting (?)
-    "lt_st": 0,                                                     // light subtype
-    "sho": [0, 0, 0, 0],                                            // Shutter Options
+    "lk": 1,                                                        // light RGB/CT link (1=true, 0=false) 
+    "lt_st": 0,                                                     // light subtype (0=None, 1=Single, 2=ColdWarm, 3=RGB, 4=RGBW, 5=RGBCW)
+    "sho": [0, 0, 0, 0],                                            // Shutter Options (Bit0=invert, Bit1=locked, Bit2=End stop time enabled, Bit3=webButtons Inverted)
     "ver": 1                                                        // Discovery Version
 }
 ```
