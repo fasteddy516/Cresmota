@@ -1,0 +1,104 @@
+// behaviour constants
+#define_constant CLEAN_SESSION 1    // mqtt clean session on connect (0=false, 1=true) 
+
+// cresmota-id prefix used in mock mac addresses
+#define_constant ID_PREFIX "0E107F0000" // using a 'locally administered' address space
+
+// string/memory allocation - these affect maximum topic/message lengths
+#define_constant MAX_TOPIC_LENGTH	80     // maximum length of any topic string (single or multi-level)
+#define_constant MAX_MSG_LENGTH		255     // maximum length of most messages (there are special cases)
+#define_constant MAX_NAME_LENGTH	40      // maximum 'friendly name' length
+#define_constant BUFFER_SIZE		2048    // size of tcp buffer - must be large enough for autodicovery messages
+
+// mqtt topic constants - we're sticking with tasmota defaults
+#define_constant TOPIC_CMND			"cmnd"
+#define_constant TOPIC_TELE			"tele"
+#define_constant TOPIC_STAT			"stat"
+#define_constant TOPIC_LWT			"LWT"
+#define_constant TOPIC_DISCOVERY	"tasmota/discovery"
+#define_constant TOPIC_CONFIG		"config"
+#define_constant TOPIC_SENSORS		"sensors"
+#define_constant TOPIC_STATE		"STATE"
+#define_constant TOPIC_RESULT       "RESULT"
+#define_constant TOPIC_POWER        "POWER"
+
+// readability constants - don't mess with these, code depends on them!
+#define_constant QOS_0  0           // mqtt qos level 0
+#define_constant QOS_1  1           // mqtt qos level 1
+#define_constant RETAIN_OFF	0       // mqtt retain=false
+#define_constant RETAIN_ON	1       // mqtt retain=true
+#define_constant OFFLINE "Offline"
+#define_constant ONLINE  "Online"
+#define_constant UNSOLICITED    0
+#define_constant SOLICITED      1
+
+#define_constant T_WILL     0          
+#define_constant T_STATE    1          
+#define_constant T_CMNDSUB  2
+#define_constant T_DISCCFG  3
+#define_constant T_DISCSNS  4
+#define_constant T_RESULT   5
+#define_constant T_POWER    6 
+
+#define_constant C_ON       "ON"
+#define_constant C_OFF      "OFF"
+#define_constant C_TOGGLE   "TOGGLE"
+#define_constant C_HOLD     "HOLD"
+
+structure cresmota_struct
+{
+	string id[12];
+    string topic[MAX_TOPIC_LENGTH];
+};
+
+
+function CresmotaInitialize(cresmota_struct cresmota, integer arg_id, string arg_topic)
+{
+    makeString(cresmota.id, "%s%02X", ID_PREFIX, arg_id);
+	cresmota.topic = arg_topic;
+}
+
+string_function CresmotaTopic(cresmota_struct cresmota, integer arg_topic)
+{
+    string scratch$[MAX_TOPIC_LENGTH];
+    
+    switch (arg_topic)
+    {
+        case (T_WILL)       : { makeString(scratch$, "%s/%s/%s", TOPIC_TELE, cresmota.topic, TOPIC_LWT);        }
+        case (T_STATE)      : { makeString(scratch$, "%s/%s/%s", TOPIC_TELE, cresmota.topic, TOPIC_STATE);      }
+        case (T_CMNDSUB)    : { makeString(scratch$, "%s/%s/#", TOPIC_CMND, cresmota.topic);                    }
+        case (T_DISCCFG)    : { makeString(scratch$, "%s/%s/%s", TOPIC_DISCOVERY, cresmota.id, TOPIC_CONFIG);   }
+        case (T_DISCSNS)    : { makeString(scratch$, "%s/%s/%s", TOPIC_DISCOVERY, cresmota.id, TOPIC_SENSORS);  }
+        case (T_RESULT)     : { makeString(scratch$, "%s/%s/%s", TOPIC_STAT, cresmota.topic, TOPIC_RESULT);     }
+        case (T_POWER)      : { makeString(scratch$, "%s/%s/%s", TOPIC_STAT, cresmota.topic, TOPIC_POWER);      }
+    }
+    return(scratch$);
+}
+
+integer_function CresmotaNameIsValid(string arg_name)
+{
+    return (len(arg_name) && (arg_name != "x"));
+}
+
+string_function CresmotaNameOrNull(string arg_name)
+{
+    if (CresmotaNameIsValid(arg_name))
+        return(arg_name);
+    else
+        return("null");
+}
+
+string_function CresmotaOnOff(integer arg_state)
+{
+    if (arg_state)
+        return("ON");
+    else
+        return("OFF");
+}
+
+string_function CresmotaTimestamp()
+{
+	return("YYYY-MM-DDTHH:MM:SS");
+}
+
+

@@ -33,8 +33,9 @@ SOFTWARE.
 
 /** COMPILER DIRECTIVES ******************************************************/
 #symbol_name "Cresmota - Relays"
-#user_simplsharp_library "SimplMQTT.Client"
 #category "46" "Cresmota"
+#user_simplsharp_library "SimplMQTT.Client"
+#user_library "Cresmota Helpers"
 #default_volatile
 #enable_stack_checking
 
@@ -45,43 +46,28 @@ SOFTWARE.
 
 #define_constant LOGGING	1
 
-#define_constant NUM_RELAYS 8
+#define_constant TUYA_FLAG		"0"	// (autodiscovery) set to 1 for tuya dimmer 
+#define_constant IFAN_FLAG		"0"	// (autodiscovery) set to 1 for fan controller
+#define_constant LIGHT_LINK		"1"	// (autodiscovery) RGB/CT light link state
+#define_constant LIGHT_SUBTYPE	"0"	// (autodiscovery) light subtype
 
-#define_constant MAX_TOPIC_LENGTH	255
-#define_constant MAX_MSG_LENGTH		255
-#define_constant MAX_NAME_LENGTH	50
-#define_constant BUFFER_SIZE		2048
+#define_constant SETOPTION_4	"0"	// not supported - leave at 0
+#define_constant SETOPTION_11	"0"	// not supported - leave at 0
+#define_constant SETOPTION_13	"0"	// not supported - leave at 0
+#define_constant SETOPTION_17	"0"	// not supported - leave at 0
+#define_constant SETOPTION_20	"0"	// not supported - leave at 0
+#define_constant SETOPTION_30	"0"	// set to 1 to enforce discovery of relays as lights
+#define_constant SETOPTION_68	"0"	// not supported - leave at 0
+#define_constant SETOPTION_73	"0"	// set to 1 to detach buttons from relays
+#define_constant SETOPTION_82	"0"	// not supported - leave at 0
+#define_constant SETOPTION_114	"0"	// set to 1 to detach switches from relays
+#define_constant SETOPTION_117	"0"	// not supported - leave at 0
 
-#define_constant STOPPED	0
-#define_constant STOPPING	1
-#define_constant STARTING	2
-#define_constant STARTED	3
-
-#define_constant QOS_0	0 
-#define_constant QOS_1	1
-
-#define_constant RETAIN_OFF	0
-#define_constant RETAIN_ON	1
-
-#define_constant CLEAN_SESSION 1
-
-#define_constant TOPIC_CMND			"cmnd"
-#define_constant TOPIC_TELE			"tele"
-#define_constant TOPIC_STAT			"stat"
-#define_constant TOPIC_LWT			"LWT"
-#define_constant TOPIC_DISCOVERY	"tasmota/discovery"
-#define_constant TOPIC_CONFIG		"config"
-#define_constant TOPIC_SENSORS		"sensors"
-#define_constant TOPIC_STATE		"STATE"
-
-#define_constant OFFLINE 0
-#define_constant ONLINE 1
-
-#define_constant ID_PREFIX "0E107F0000"
+#define_constant MAX_RELAYS 8
 
 
 /** PARAMETER DEFINITIONS ****************************************************/
-string_parameter DeviceName[50];
+string_parameter DeviceName[MAX_NAME_LENGTH];
 #begin_parameter_properties DeviceName
 	propDefaultUnit = unitString;
 	propValidUnits = unitString;
@@ -97,7 +83,7 @@ integer_parameter CresmotaID;
 	propShortDescription = "Cresmota ID number.  Must be unique for each Cresmota device connecting to the same MQTT broker.";
 #end_parameter_properties
 
-string_parameter ClientID[50];
+string_parameter ClientID[MAX_NAME_LENGTH];
 #begin_parameter_properties ClientID
 	propDefaultUnit = unitString;
 	propValidUnits = unitString;
@@ -141,7 +127,7 @@ integer_parameter UseSSL;
 	propDefaultUnit = unitDecimal;
 	propValidUnits = unitDecimal;
 	propDefaultValue = 0d;
-	propList = {0d, "False"}, {1d, "True"};
+	propList = {0d, "No"}, {1d, "Yes"};
 	propShortDescription = "Set to True to enable SSL encryption.";
 #end_parameter_properties
 
@@ -169,6 +155,15 @@ string_parameter Topic[MAX_TOPIC_LENGTH];
 	propShortDescription = "Unique MQTT topic for this device.";
 #end_parameter_properties
 
+integer_parameter AutoDiscovery;
+#begin_parameter_properties AutoDiscovery
+	propDefaultUnit = unitDecimal;
+	propValidUnits = unitDecimal;
+	propDefaultValue = 1d;
+	propList = {0d, "Disabled"}, {1d, "Enabled"};
+	propShortDescription = "Enable/Disabled Home Assistant Auto Discovery.";
+#end_parameter_properties
+
 integer_parameter ReportAs;
 #begin_parameter_properties ReportAs
 	propDefaultUnit = unitDecimal;
@@ -180,7 +175,7 @@ integer_parameter ReportAs;
 
 string_parameter _skip_, _skip_;
 
-string_parameter Name[NUM_RELAYS, NUM_RELAYS][MAX_NAME_LENGTH];
+string_parameter Name[MAX_RELAYS, MAX_RELAYS][MAX_NAME_LENGTH];
 #begin_parameter_properties Name
 	propDefaultUnit = unitString;
 	propValidUnits = unitString;
@@ -190,38 +185,36 @@ string_parameter Name[NUM_RELAYS, NUM_RELAYS][MAX_NAME_LENGTH];
 
 
 /** MODULE INPUT/OUTPUT DEFINITIONS ******************************************/
-digital_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				enable, _skip_, state[NUM_RELAYS, NUM_RELAYS]
+digital_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_,
+				enable, _skip_, state[MAX_RELAYS, MAX_RELAYS]
 ;
-digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				connect_fb, _skip_, toggle[NUM_RELAYS], _skip_, turn_on[NUM_RELAYS], _skip_, turn_off[NUM_RELAYS, NUM_RELAYS]
+digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_,
+				connect_fb, _skip_,
+				toggle[MAX_RELAYS], _skip_,
+				turn_on[MAX_RELAYS], _skip_,
+				turn_off[MAX_RELAYS, MAX_RELAYS]
 ;
-
-
-/** CUSTOM STRUCTURES ********************************************************/
 
 
 /** GLOBAL VARIABLES *********************************************************/
-integer	g_initialized, g_state;
-
-string	g_id$[12], g_relayState$[2][3];
+integer	g_initialized, g_enabled, g_busy;
 
 MqttClient g_client;
 
+cresmota_struct g_cresmota;
+
 
 /** LOCAL FUNCTIONS **********************************************************/
-function initializeClient()
+function initializeModule()
 {
-	string scratch_topic$[MAX_TOPIC_LENGTH];
-
-	makeString(g_id$, "%s%02X", ID_PREFIX, CresmotaID);
-	
-	makeString(scratch_topic$, "%s/%s/%s", TOPIC_TELE, Topic, TOPIC_LWT);
+	CresmotaInitialize(g_cresmota, CresmotaID, Topic);
 
 	g_client.Log(LOGGING);
 
 	g_client.Initialize(
-		ClientID,
+		g_cresmota.id,
 		BrokerAddress,
 		BrokerPort,
 		UseSSL,
@@ -230,8 +223,8 @@ function initializeClient()
 		on,
 		RETAIN_ON,
 		QOS_1,
-		scratch_topic$,
-		"Offline",
+		CresmotaTopic(g_cresmota, T_WILL),
+		OFFLINE,
 		CLEAN_SESSION,
 		BUFFER_SIZE
 	);
@@ -246,101 +239,153 @@ function initializeClient()
 			g_client.UseCertificate(SSLCertificateFile, SSLPrivateKeyFile);
 	}
 
-	makeString(scratch_topic$, "%s/%s/#", TOPIC_CMND, Topic);
-	g_client.AddSubscription(scratch_topic$, QOS_0);
+	g_client.AddSubscription(CresmotaTopic(g_cresmota, T_CMNDSUB), QOS_0);
 }
 
-string_function getTimestamp()
-{
-	return("YYYY-MM-DDTHH:MM:SS");
-}
 
 function publishAutoDiscovery()
 {
-	string scratch_topic$[MAX_TOPIC_LENGTH], message$[BUFFER_SIZE], scratch$[512];
+	string message$[BUFFER_SIZE], scratch$[512];
 	
-	// autodiscovery config topic
-	makeString(scratch_topic$, "%s/%s/%s", TOPIC_DISCOVERY, g_id$, TOPIC_CONFIG);
-
-	// opening brace
-	message$ = "{";
-    
-	// add ip address (just send a throwaway value)
-	message$ = message$ + "\x22ip\x22:\x22x.x.x.x\x22,";
-    
-	// add device name
-	message$ = message$ + "\x22dn\x22:\x22" + DeviceName + "\x22,";
-    
-	// add friendly names
-	makeString(scratch$,
-		"\x22fn\x22:[\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22],",
-		Name[1], Name[2], Name[3], Name[4], Name[5], Name[6], Name[7], Name[8]
-	);	
-	message$ = message$ + scratch$;
-    
-	// add hostname (just use ClientID - there is no actual hostname for this device)
-	message$ = message$ + "\x22hn\x22:\x22" + ClientID + "\x22,";
-    
-	//add mac address (device id)
-	message$ = message$ + "\x22mac\x22:\x22" + g_id$ + "\x22,";
-    
-	// add module (template) name
-	message$ = message$ + "\x22md\x22:\x22" + MODULE_NAME + "\x22,";
-
-	// add static stuff
-	message$ = message$ + "\x22ty\x22:0,\x22if\x22:0,\x22ofln\x22:\x22Offline\x22,\x22onln\x22:\x22Online\x22,\x22state\x22:[\x22OFF\x22,\x22ON\x22,\x22TOGGLE\x22,\x22HOLD\x22],";
-    
-	// add software version
-	message$ = message$ + "\x22sw\x22:\x22" + MODULE_VERSION + "\x22,";
-    
-	// add mqtt topic
-	message$ = message$ + "\x22t\x22:\x22" + Topic + "\x22,";
-    
-	// add static stuff
-	message$ = message$ + "\x22ft\x22:\x22%prefix%/%topic%/\x22,\x22tp\x22:[\x22cmnd\x22,\x22stat\x22,\x22tele\x22],";
-	message$ = message$ + "\x22rl\x22:[1,1,1,1,1,1,1,1],";
-    message$ = message$ + "\x22swc\x22:[-1,-1,-1,-1,-1,-1,-1,-1],";
-    message$ = message$ + "\x22swn\x22:[null,null,null,null,null,null,null,null],";
-    message$ = message$ + "\x22btn\x22:[0,0,0,0,0,0,0,0],";    
+	if (AutoDiscovery)
+	{
+		// autodiscovery config message ----------
+		// opening brace
+		message$ = "{";
 	
-	// add SetOptions, currently static except for using ReportAs parameter for option #30
-	makeString(scratch$, "\x22so\x22:{\x224\x22:0,\x2211\x22:0,\x2213\x22:0,\x2217\x22:0,\x2220\x22:0,\x2230\x22:%u,\x2268\x22:0,\x2273\x22:0,\x2282\x22:0,\x22114\x22:0,\x22117\x22:0},", ReportAs);
-	message$ = message$ + scratch$;
-
-	// add remaining static stuff
-	message$ = message$ + "\x22lk\x22:1,\x22lt_st\x22:0,\x22sho\x22:[0,0,0,0],\x22ver\x22:1";
-
-	// closing brace
-	message$ = message$ + "}";
+		// add ip address (just send a throwaway value)
+		message$ = message$ + "\x22ip\x22:\x22x.x.x.x\x22,";
 	
-	g_client.Publish(scratch_topic$, message$, RETAIN_ON);
+		// add device name
+		message$ = message$ + "\x22dn\x22:\x22" + DeviceName + "\x22,";
+	
+		// add friendly names
+		makeString(scratch$,
+			"\x22fn\x22:[\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22],",
+			CresmotaNameOrNull(Name[1]),
+			CresmotaNameOrNull(Name[2]),
+			CresmotaNameOrNull(Name[3]),
+			CresmotaNameOrNull(Name[4]),
+			CresmotaNameOrNull(Name[5]),
+			CresmotaNameOrNull(Name[6]),
+			CresmotaNameOrNull(Name[7]),
+			CresmotaNameOrNull(Name[8])
+		);	
+		message$ = message$ + scratch$;
 
-	// publish autodiscovery sensors
-	makeString(scratch_topic$, "%s/%s/%s", TOPIC_DISCOVERY, g_id$, TOPIC_SENSORS);
-	makeString(message$, "{\x22sn\x22:{\x22Time\x22:\x22%s\x22},\x22ver\x22:1}", getTimestamp())	;
-	g_client.Publish(scratch_topic$, message$, RETAIN_ON);
+		// add hostname (just use ClientID - there is no actual hostname for this device)
+		message$ = message$ + "\x22hn\x22:\x22" + ClientID + "\x22,";
+
+		//add mac address (device id)
+		message$ = message$ + "\x22mac\x22:\x22" + g_cresmota.id + "\x22,";
+
+		// add module (template) name
+		message$ = message$ + "\x22md\x22:\x22" + MODULE_NAME + "\x22,";
+
+		// add tuya flag (set to 1 if this module is emulating a tuya dimmer)
+		message$ = message$ + "\x22ty\x22:" + TUYA_FLAG + ",";
+		
+		// add ifan flag (set to 1 if this module is emulating a fan/light controller)
+		message$ = message$ + "\x22if\x22:" + IFAN_FLAG + ",";
+		
+		// add static stuff (we are staying with tasmota defaults here)
+		message$ = message$ + "\x22ofln\x22:\x22Offline\x22,\x22onln\x22:\x22Online\x22,\x22state\x22:[\x22OFF\x22,\x22ON\x22,\x22TOGGLE\x22,\x22HOLD\x22],";
+	
+		// add software version
+		message$ = message$ + "\x22sw\x22:\x22" + MODULE_VERSION + "\x22,";
+	
+		// add mqtt topic
+		message$ = message$ + "\x22t\x22:\x22" + Topic + "\x22,";
+	
+		// add static stuff (we are staying with tasmota defaults here)
+		message$ = message$ + "\x22ft\x22:\x22%prefix%/%topic%/\x22,\x22tp\x22:[\x22cmnd\x22,\x22stat\x22,\x22tele\x22],";
+		
+		// add relay types
+		makeString(scratch$, "\x22rl\x22:[%u,%u,%u,%u,%u,%u,%u,%u],",
+			CresmotaNameIsValid(Name[1]),
+			CresmotaNameIsValid(Name[2]),
+			CresmotaNameIsValid(Name[3]),
+			CresmotaNameIsValid(Name[4]),
+			CresmotaNameIsValid(Name[5]),
+			CresmotaNameIsValid(Name[6]),
+			CresmotaNameIsValid(Name[7]),
+			CresmotaNameIsValid(Name[8])
+		);
+		message$ = message$ + scratch$;
+	    
+		// add switch types (no switches for this module)
+		message$ = message$ + "\x22swc\x22:[-1,-1,-1,-1,-1,-1,-1,-1],";
+	    
+		// add switch names (no switches for this module)
+		message$ = message$ + "\x22swn\x22:[null,null,null,null,null,null,null,null],";
+	    
+		// add button enables (no buttons for this module)
+		message$ = message$ + "\x22btn\x22:[0,0,0,0,0,0,0,0],";    
+
+		// add SetOptions
+		message$ = message$ + "\x22so\x22:{";
+		message$ = message$ + "\x224\x22:" + SETOPTION_4 + ",";
+		message$ = message$ + "\x2211\x22:" + SETOPTION_11 + ",";
+		message$ = message$ + "\x2213\x22:" + SETOPTION_13 + ",";
+		message$ = message$ + "\x2217\x22:" + SETOPTION_17 + ",";
+		message$ = message$ + "\x2220\x22:" + SETOPTION_20 + ",";
+		message$ = message$ + "\x2230\x22:" + itoa(ReportAs) + ","; // via module parameter instead of static constant
+		message$ = message$ + "\x2268\x22:" + SETOPTION_68 + ",";
+		message$ = message$ + "\x2273\x22:" + SETOPTION_73 + ",";
+		message$ = message$ + "\x2282\x22:" + SETOPTION_82 + ",";
+		message$ = message$ + "\x22114\x22:" + SETOPTION_114 + ",";
+		message$ = message$ + "\x22117\x22:" + SETOPTION_117 + "},";
+
+		// add light rgb/ct link state
+		message$ = message$ + "\x22lk\x22:" + LIGHT_LINK + ",";
+		
+		// add light subtype
+		message$ = message$ + "\x22lt_st\x22:" + LIGHT_SUBTYPE + ",";
+		
+		// add shutter options (not currently supported in cresmota)
+		message$ = message$ + "\x22sho\x22:[0,0,0,0],";
+
+		// add protocol version		
+		message$ = message$ + "\x22ver\x22:1";
+
+		// closing brace
+		message$ = message$ + "}";
+
+		g_client.Publish(CresmotaTopic(g_cresmota, T_DISCCFG), message$, RETAIN_ON);
+
+		// autodiscovery sensors message----------
+		makeString(message$, "{\x22sn\x22:{\x22Time\x22:\x22%s\x22},\x22ver\x22:1}", CresmotaTimeStamp());
+		g_client.Publish(CresmotaTopic(g_cresmota, T_DISCSNS), message$, RETAIN_ON);
+	}
+	else // if autodiscovery is disabled, just make sure any previously retained topic is cleared
+	{
+		g_client.Publish(CresmotaTopic(g_cresmota, T_DISCCFG), "", RETAIN_ON);
+		g_client.Publish(CresmotaTopic(g_cresmota, T_DISCCFG), "", RETAIN_OFF);
+		g_client.Publish(CresmotaTopic(g_cresmota, T_DISCSNS), "", RETAIN_ON);
+		g_client.Publish(CresmotaTopic(g_cresmota, T_DISCSNS), "", RETAIN_OFF);
+	}
 }
 
-function publishState()
+
+function publishState(integer arg_byRequest)
 {
 	integer	i;
-	string scratch_topic$[MAX_TOPIC_LENGTH], message$[BUFFER_SIZE], scratch$[512];
-	
-	makeString(scratch_topic$, "%s/%s/%s", TOPIC_TELE, g_id$, TOPIC_STATE);
+	string message$[BUFFER_SIZE], scratch$[512];
 	
 	// opening brace
 	message$ = "{";
 
 	// add timestamp
-    message$ = message$ + "\x22Time\x22:\x22" + getTimestamp() + "\x22,";
+    message$ = message$ + "\x22Time\x22:\x22" + CresmotaTimeStamp() + "\x22,";
 
 	// add static values for statistics we don't track
     message$ = message$ + "\x22Uptime\x22:\x220T00:00:00\x22,\x22UptimeSec\x22: 0,\x22Heap\x22:28,\x22SleepMode\x22:\x22Dynamic\x22,\x22Sleep\x22:50,\x22LoadAvg\x22:19,\x22MqttCount\x22:1,";
 
     // add states as reported by digital inputs
-	for (i = 1 to NUM_RELAYS)
+	for (i = 1 to MAX_RELAYS)
 	{
-		makeString(scratch$, "\x22POWER%u\x22:\x22%s\x22,", i, g_relayState$[state[i]]);
+		if (CresmotaNameIsValid(Name[i]))
+			makeString(scratch$, "\x22POWER%u\x22:\x22%s\x22,", i, CresmotaOnOff(state[i]));
 		message$ = message$ + scratch$;
 	}	
     
@@ -350,58 +395,121 @@ function publishState()
 	// closing brace
 	message$ = message$ + "}";
 	
-	g_client.Publish(scratch_topic$, message$, RETAIN_OFF);
+	// publish to the normal telemetry topic
+	g_client.Publish(CresmotaTopic(g_cresmota, T_STATE), message$, RETAIN_OFF);
+
+	// also publish to the response topic if this is a reply to a cmnd message
+	if (arg_byRequest)
+		g_client.Publish(CresmotaTopic(g_cresmota, T_RESULT), message$, RETAIN_OFF);
 }
 
-function publishAvailability(integer arg_status)
+
+function publishAvailability(string arg_status)
 {
-	string will_topic$[MAX_TOPIC_LENGTH];
+	g_client.Publish(CresmotaTopic(g_cresmota, T_WILL), arg_status, (arg_status != ONLINE));
+}
 
-	makeString(will_topic$, "%s/%s/%s", TOPIC_TELE, Topic, TOPIC_LWT);
 
-	if (arg_status = OFFLINE)
-		g_client.Publish(will_topic$, "Offline", RETAIN_ON);
-	else
-		g_client.Publish(will_topic$, "Online", RETAIN_OFF);
+function publishPower(integer arg_i)
+{
+	string topic$[MAX_TOPIC_LENGTH], message$[MAX_MSG_LENGTH];
+
+	// send 'result'
+	topic$ = CresmotaTopic(g_cresmota, T_RESULT);
+	makeString(message$, "{\x22POWER%u\x22:\x22%s\x22}", arg_i, CresmotaOnOff(state[arg_i]));
+	g_client.Publish(topic$, message$, RETAIN_OFF);
+
+	// send 'power'
+	topic$ = CresmotaTopic(g_cresmota, T_POWER) + itoa(arg_i);
+	g_client.Publish(topic$, CresmotaOnOff(state[arg_i]), RETAIN_OFF);
+}
+
+
+function processPowerCommand(integer arg_i, string arg_cmd)
+{
+	arg_i = max(1, arg_i);
+	
+	if (arg_i > MAX_RELAYS) return;
+
+	if (arg_cmd = C_ON)
+	{
+		pulse(1, turn_on[arg_i]);
+	}
+
+	else if (arg_cmd = C_OFF)
+	{
+		pulse(1, turn_off[arg_i]);
+	}
+
+	else if (arg_cmd = C_TOGGLE)
+	{
+		pulse(1, toggle[arg_i]);
+	}
+
+	else if (arg_cmd = "")
+	{
+		publishPower(arg_i);
+	}
 }
 
 
 /** MODULE EVENTS ************************************************************/
-push enable
+change enable
 {
-	if (!g_initialized || (g_state > STOPPING)) terminateEvent;
+	if (g_busy) terminateEvent;
 
-	while (g_state = STOPPING) delay(2);
+	g_busy = on;
 
-	g_state = STARTING;
-
-		g_client.Start();
-
-	g_state = STARTED;
-}
-
-
-release enable
-{
-	if (!g_initialized || (g_state < STARTING)) terminateEvent;
-
-	while (g_state = STARTING) delay(2);
-
-	g_state = STOPPING;
-	
-		// if we're currently connected, publish current state and manually send will
-		if (connect_fb)
+		try
 		{
-			publishState();
-			publishAvailability(OFFLINE);
-			processLogic();
-		}
-		
-		g_client.Stop();
+			while (!g_initialized) delay(10);
 
-	g_state = STOPPED;
+			delay(10); // pseudo-debounce delay
+
+			// keep changing state as long as necessary to match 'enable' input
+			while (enable != g_enabled)
+			{
+				// enable the module
+				if (enable)
+				{
+					g_client.Start();
+					
+					g_enabled = on;
+				}
+
+				// disable the module
+				else
+				{
+					// if we're currently connected, publish current state and manually send will
+					if (connect_fb)
+					{
+						publishState(UNSOLICITED);
+						publishAvailability(OFFLINE);
+						processLogic();
+					}
+					g_client.Stop();
+					
+					g_enabled = off;
+				}
+			}
+		}	
+		catch
+		{
+			generateUserWarning("Exception caught in 'enable' event");
+		}
+
+	g_busy = off;	
 }
 
+threadsafe change state
+{
+	integer i;
+
+	i = getLastModifiedArrayIndex();
+
+	if (connect_fb)
+		publishPower(i);
+}
 
 /** EVENT HANDLERS ***********************************************************/
 eventhandler ConnectionStateChangedEventHandler(MqttClient client , ConnectionStateChangedEventArgs e)
@@ -418,28 +526,15 @@ eventhandler ConnectionStateChangedEventHandler(MqttClient client , ConnectionSt
 
 eventhandler MessageArrivedEventHandler(MqttClient client, MessageReceivedEventArgs e)                                                                       
 {
-	/*
-	integer i;
-
-	for(i = 1 to NUM_TOTAL)
+	if (findNoCase(TOPIC_STATE, e.Topic))
 	{
-		// check if topic matches something we have subscribed to
-		if ((g_topic[i].QoS <= QOS_1) && (g_topic[i].Value = e.Topic))
-		{
-			// subscription associated with a digital output
-			if (i <= NUM_DIGITAL)
-				d_out[i] = min(atoi(e.Value), 1);
-			
-			// subscription associated with an analog output
-			else if (i <= (NUM_DIGITAL + NUM_ANALOG))
-				a_out[i - NUM_DIGITAL] = atoi(e.Value);
-
-			// subscription associated with a serial output
-			else
-				s_out$[i - NUM_DIGITAL - NUM_ANALOG] = e.Value;
-		}	
+		publishState(SOLICITED);
 	}
-	*/
+
+	else if (findNoCase(TOPIC_POWER, e.Topic))
+	{
+		processPowerCommand(atoi(right(e.Topic, 1)), e.Value);
+	}
 }
 
 
@@ -454,14 +549,12 @@ function main()
 {
 	g_initialized = off;
 
-		g_state = STOPPED;
+		g_busy = off;
+		g_enabled = off;
 
-		g_relayState$[off] = "OFF";
-		g_relayState$[on] = "ON";
-		
 		waitForInitializationComplete();
 
-		initializeClient();
+		initializeModule();
 
 	g_initialized = on;
 }
