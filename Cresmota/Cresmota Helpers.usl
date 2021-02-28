@@ -1,3 +1,37 @@
+/** MODULE INFORMATION ********************************************************
+Name........: Cresmota Helper Library
+Version.....: 20210227
+Author......: Edward Wright
+
+
+*** MIT LICENSE ***************************************************************
+
+Copyright (c) 2021 Edward Wright
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+*** REVISION HISTORY **********************************************************
+20210227 - initial release
+
+
+*** CONSTANT DEFINITIONS *****************************************************/
 // behaviour constants
 #define_constant CLEAN_SESSION 1    // mqtt clean session on connect (0=false, 1=true) 
 
@@ -9,6 +43,9 @@
 #define_constant MAX_MSG_LENGTH		255     // maximum length of most messages (there are special cases)
 #define_constant MAX_NAME_LENGTH	40      // maximum 'friendly name' length
 #define_constant BUFFER_SIZE		2048    // size of tcp buffer - must be large enough for autodicovery messages
+
+// tasmota device io limits
+#define_constant MAX_RELAYS 8
 
 // mqtt topic constants - we're sticking with tasmota defaults
 #define_constant TOPIC_CMND			"cmnd"
@@ -45,6 +82,8 @@
 #define_constant C_TOGGLE   "TOGGLE"
 #define_constant C_HOLD     "HOLD"
 
+
+/** CUSTOM STRUCTURES ********************************************************/
 structure cresmota_struct
 {
 	string id[12];
@@ -52,11 +91,13 @@ structure cresmota_struct
 };
 
 
+/** LIBRARY FUNCTIONS ********************************************************/
 function CresmotaInitialize(cresmota_struct cresmota, integer arg_id, string arg_topic)
 {
     makeString(cresmota.id, "%s%02X", ID_PREFIX, arg_id);
 	cresmota.topic = arg_topic;
 }
+
 
 string_function CresmotaTopic(cresmota_struct cresmota, integer arg_topic)
 {
@@ -75,10 +116,12 @@ string_function CresmotaTopic(cresmota_struct cresmota, integer arg_topic)
     return(scratch$);
 }
 
+
 integer_function CresmotaNameIsValid(string arg_name)
 {
     return (len(arg_name) && (arg_name != "x"));
 }
+
 
 string_function CresmotaNameOrNull(string arg_name)
 {
@@ -88,6 +131,7 @@ string_function CresmotaNameOrNull(string arg_name)
         return("null");
 }
 
+
 string_function CresmotaOnOff(integer arg_state)
 {
     if (arg_state)
@@ -95,6 +139,7 @@ string_function CresmotaOnOff(integer arg_state)
     else
         return("OFF");
 }
+
 
 string_function CresmotaTimestamp()
 {

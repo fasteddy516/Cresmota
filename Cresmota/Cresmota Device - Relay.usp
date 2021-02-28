@@ -1,6 +1,6 @@
 /** MODULE INFORMATION ********************************************************
 Name........: Cresmota - Relays
-Version.....: 20210223
+Version.....: 20210227
 Author......: Edward Wright
 
 
@@ -28,11 +28,11 @@ SOFTWARE.
 
 
 *** REVISION HISTORY **********************************************************
-20210223 - initial release
+20210227 - initial release
 
 
 /** COMPILER DIRECTIVES ******************************************************/
-#symbol_name "Cresmota - Relays"
+#symbol_name "Cresmota Device - Relay"
 #category "46" "Cresmota"
 #user_simplsharp_library "SimplMQTT.Client"
 #user_library "Cresmota Helpers"
@@ -41,16 +41,16 @@ SOFTWARE.
 
 
 /** CONSTANT DEFINITIONS *****************************************************/
-#define_constant MODULE_NAME	"Cresmota-Relays"
+#define_constant MODULE_NAME	"Cresmota Relay"
 #define_constant MODULE_VERSION	"0.1.0"
 
 #define_constant LOGGING	1
 
-#define_constant TUYA_FLAG		"0"	// (autodiscovery) set to 1 for tuya dimmer 
-#define_constant IFAN_FLAG		"0"	// (autodiscovery) set to 1 for fan controller
-#define_constant LIGHT_LINK		"1"	// (autodiscovery) RGB/CT light link state
-#define_constant LIGHT_SUBTYPE	"0"	// (autodiscovery) light subtype
-
+// autodiscovery configuration
+#define_constant TUYA_FLAG		"0"	// set to 1 for tuya dimmer 
+#define_constant IFAN_FLAG		"0"	// set to 1 for fan controller
+#define_constant LIGHT_LINK		"1"	// RGB/CT light link state
+#define_constant LIGHT_SUBTYPE	"0"	// light subtype
 #define_constant SETOPTION_4	"0"	// not supported - leave at 0
 #define_constant SETOPTION_11	"0"	// not supported - leave at 0
 #define_constant SETOPTION_13	"0"	// not supported - leave at 0
@@ -62,8 +62,6 @@ SOFTWARE.
 #define_constant SETOPTION_82	"0"	// not supported - leave at 0
 #define_constant SETOPTION_114	"0"	// set to 1 to detach switches from relays
 #define_constant SETOPTION_117	"0"	// not supported - leave at 0
-
-#define_constant MAX_RELAYS 8
 
 
 /** PARAMETER DEFINITIONS ****************************************************/
@@ -90,8 +88,8 @@ string_parameter ClientID[MAX_NAME_LENGTH];
 	propShortDescription = "String used to identify the client to the broker - must be unique for each client.";
 #end_parameter_properties
 
-string_parameter BrokerAddress[14];
-#begin_parameter_properties BrokerAddress
+string_parameter Broker[14];
+#begin_parameter_properties Broker
 	propDefaultUnit = unitString;
 	propValidUnits = unitString;
 	propShortDescription = "IP address of the MQTT broker.";
@@ -199,7 +197,7 @@ digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 
 
 /** GLOBAL VARIABLES *********************************************************/
-integer	g_initialized, g_enabled, g_busy;
+integer	g_initialized, g_enabled, g_busy, g_numRelays;
 
 MqttClient g_client;
 
@@ -209,13 +207,15 @@ cresmota_struct g_cresmota;
 /** LOCAL FUNCTIONS **********************************************************/
 function initializeModule()
 {
+	integer i;
+	
 	CresmotaInitialize(g_cresmota, CresmotaID, Topic);
 
 	g_client.Log(LOGGING);
 
 	g_client.Initialize(
 		g_cresmota.id,
-		BrokerAddress,
+		Broker,
 		BrokerPort,
 		UseSSL,
 		Username,
@@ -239,12 +239,22 @@ function initializeModule()
 			g_client.UseCertificate(SSLCertificateFile, SSLPrivateKeyFile);
 	}
 
+	for (i = 1 to MAX_RELAYS)
+	{
+		if (CresmotaNameIsValid(Name[i]))
+			g_numRelays = i;
+		else
+			break;
+	}
+
+
 	g_client.AddSubscription(CresmotaTopic(g_cresmota, T_CMNDSUB), QOS_0);
 }
 
 
 function publishAutoDiscovery()
 {
+	integer i;
 	string message$[BUFFER_SIZE], scratch$[512];
 	
 	if (AutoDiscovery)
@@ -260,18 +270,18 @@ function publishAutoDiscovery()
 		message$ = message$ + "\x22dn\x22:\x22" + DeviceName + "\x22,";
 	
 		// add friendly names
-		makeString(scratch$,
-			"\x22fn\x22:[\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22,\x22%s\x22],",
-			CresmotaNameOrNull(Name[1]),
-			CresmotaNameOrNull(Name[2]),
-			CresmotaNameOrNull(Name[3]),
-			CresmotaNameOrNull(Name[4]),
-			CresmotaNameOrNull(Name[5]),
-			CresmotaNameOrNull(Name[6]),
-			CresmotaNameOrNull(Name[7]),
-			CresmotaNameOrNull(Name[8])
-		);	
-		message$ = message$ + scratch$;
+		message$ = message$ + "\x22fn\x22:[";
+		for (i = 1 to MAX_RELAYS)
+		{
+			if (i <= g_numRelays)
+				scratch$ = Name[i];
+			else
+				scratch$ = "null";
+			message$ = message$ + "\x22" + scratch$ + "\x22";
+			if (i < MAX_RELAYS)
+				message$ = message$ + ",";
+		}
+		message$ = message$ + "],";
 
 		// add hostname (just use ClientID - there is no actual hostname for this device)
 		message$ = message$ + "\x22hn\x22:\x22" + ClientID + "\x22,";
@@ -301,18 +311,18 @@ function publishAutoDiscovery()
 		message$ = message$ + "\x22ft\x22:\x22%prefix%/%topic%/\x22,\x22tp\x22:[\x22cmnd\x22,\x22stat\x22,\x22tele\x22],";
 		
 		// add relay types
-		makeString(scratch$, "\x22rl\x22:[%u,%u,%u,%u,%u,%u,%u,%u],",
-			CresmotaNameIsValid(Name[1]),
-			CresmotaNameIsValid(Name[2]),
-			CresmotaNameIsValid(Name[3]),
-			CresmotaNameIsValid(Name[4]),
-			CresmotaNameIsValid(Name[5]),
-			CresmotaNameIsValid(Name[6]),
-			CresmotaNameIsValid(Name[7]),
-			CresmotaNameIsValid(Name[8])
-		);
-		message$ = message$ + scratch$;
-	    
+		message$ = message$ + "\x22rl\x22:[";
+		for (i = 1 to MAX_RELAYS)
+		{
+			if (i <= g_numRelays)
+				message$ = message$ + "1";
+			else
+				message$ = message$ + "0";
+			if (i < MAX_RELAYS)
+				message$ = message$ + ",";
+		}
+		message$ = message$ + "],";	    
+		
 		// add switch types (no switches for this module)
 		message$ = message$ + "\x22swc\x22:[-1,-1,-1,-1,-1,-1,-1,-1],";
 	    
@@ -382,11 +392,12 @@ function publishState(integer arg_byRequest)
     message$ = message$ + "\x22Uptime\x22:\x220T00:00:00\x22,\x22UptimeSec\x22: 0,\x22Heap\x22:28,\x22SleepMode\x22:\x22Dynamic\x22,\x22Sleep\x22:50,\x22LoadAvg\x22:19,\x22MqttCount\x22:1,";
 
     // add states as reported by digital inputs
-	for (i = 1 to MAX_RELAYS)
+	if (g_numRelays = 1)
+		message$ = message$ + "\x22POWER\x22:\x22" + CresmotaOnOff(state[1]) + "\x22,";
+	else
 	{
-		if (CresmotaNameIsValid(Name[i]))
-			makeString(scratch$, "\x22POWER%u\x22:\x22%s\x22,", i, CresmotaOnOff(state[i]));
-		message$ = message$ + scratch$;
+		for (i = 1 to g_numRelays)
+			message$ = message$ + "\x22POWER" + itoa(i) + "\x22:\x22" + CresmotaOnOff(state[i]) + "\x22,";
 	}	
     
 	// add static values for wifi stuff that is irrelevant here
@@ -406,7 +417,7 @@ function publishState(integer arg_byRequest)
 
 function publishAvailability(string arg_status)
 {
-	g_client.Publish(CresmotaTopic(g_cresmota, T_WILL), arg_status, (arg_status != ONLINE));
+	g_client.Publish(CresmotaTopic(g_cresmota, T_WILL), arg_status, RETAIN_ON);
 }
 
 
@@ -416,11 +427,16 @@ function publishPower(integer arg_i)
 
 	// send 'result'
 	topic$ = CresmotaTopic(g_cresmota, T_RESULT);
-	makeString(message$, "{\x22POWER%u\x22:\x22%s\x22}", arg_i, CresmotaOnOff(state[arg_i]));
+	message$ = "{\x22POWER";
+	if ((g_numRelays > 1) || (arg_i > 1))
+		message$ = message$ + itoa(arg_i);
+	message$ = message$ + "\x22:\x22" + CresmotaOnOff(state[arg_i]) + "\x22}";
 	g_client.Publish(topic$, message$, RETAIN_OFF);
 
 	// send 'power'
-	topic$ = CresmotaTopic(g_cresmota, T_POWER) + itoa(arg_i);
+	topic$ = CresmotaTopic(g_cresmota, T_POWER);
+	if ((g_numRelays > 1) || (arg_i > 1))
+		topic$ = topic$ + itoa(arg_i);
 	g_client.Publish(topic$, CresmotaOnOff(state[arg_i]), RETAIN_OFF);
 }
 
