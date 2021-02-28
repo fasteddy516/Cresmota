@@ -123,15 +123,6 @@ integer_function CresmotaNameIsValid(string arg_name)
 }
 
 
-string_function CresmotaNameOrNull(string arg_name)
-{
-    if (CresmotaNameIsValid(arg_name))
-        return(arg_name);
-    else
-        return("null");
-}
-
-
 string_function CresmotaOnOff(integer arg_state)
 {
     if (arg_state)
@@ -143,7 +134,10 @@ string_function CresmotaOnOff(integer arg_state)
 
 string_function CresmotaTimestamp()
 {
-	return("YYYY-MM-DDTHH:MM:SS");
+    string ts$[20];
+
+    makeString(ts$, "%04u-%02u-%02uT%s", getYearNum(), getMonthNum(), getDateNum(), time());
+	return(ts$);
 }
 
 
