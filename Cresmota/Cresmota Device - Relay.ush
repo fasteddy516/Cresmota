@@ -234,6 +234,7 @@
   FileName=Cresmota Device - Relay.ush
   SIMPLPlusModuleEncoding=0
   clz1=SimplMQTT.Client
+  clz2=SPlusUpdateTimer
   Usl1=Cresmota Helpers.usl
 [END]
 [BEGIN]

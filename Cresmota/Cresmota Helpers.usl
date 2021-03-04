@@ -33,7 +33,8 @@ SOFTWARE.
 
 *** CONSTANT DEFINITIONS *****************************************************/
 // behaviour constants
-#define_constant CLEAN_SESSION 1    // mqtt clean session on connect (0=false, 1=true) 
+#define_constant CLEAN_SESSION      1    // mqtt clean session on connect (0=false, 1=true) 
+#define_constant UPDATE_INTERVAL    300  // interval (in seconds) between automatic status updates
 
 // cresmota-id prefix used in mock mac addresses
 #define_constant ID_PREFIX "0E107F0000" // using a 'locally administered' address space
@@ -71,6 +72,7 @@ SOFTWARE.
 #define_constant ONLINE  "Online"
 #define_constant UNSOLICITED    0
 #define_constant SOLICITED      1
+#define_constant REPEAT         1
 
 #define_constant C_ON       "ON"
 #define_constant C_OFF      "OFF"

@@ -35,6 +35,7 @@ SOFTWARE.
 #symbol_name "Cresmota Device - Relay"
 #category "46" "Cresmota"
 #user_simplsharp_library "SimplMQTT.Client"
+#user_simplsharp_library "SPlusUpdateTimer"
 #user_library "Cresmota Helpers"
 #default_volatile
 #enable_stack_checking
@@ -211,6 +212,8 @@ string g_id$[12];
 
 MqttClient g_client;
 
+UpdateTimer g_updateTimer;
+
 
 /** LOCAL FUNCTIONS **********************************************************/
 function initializeModule()
@@ -241,7 +244,8 @@ function initializeModule()
 	RegisterEvent (g_client, MessageArrived, MessageArrivedEventHandler);
 	RegisterEvent (g_client, ErrorOccured, ErrorOccuredEventHandler);
 	RegisterEvent (g_client, ConnectionStateChanged, ConnectionStateChangedEventHandler);
-
+	RegisterEvent (g_updateTimer, TimerExpired, TimerExpiredEventHandler);
+	
 	if (UseSSL)
 	{
 		if ((len(SSLCertificateFile) > 1) && (len(SSLPrivateKeyFile) > 1))
@@ -537,6 +541,8 @@ change enable
 						processLogic();
 					}
 					g_client.Stop();
+					if (UPDATE_INTERVAL > 0)
+						g_updateTimer.Stop();
 					
 					g_enabled = off;
 				}
@@ -576,6 +582,11 @@ eventhandler ConnectionStateChangedEventHandler(MqttClient client, ConnectionSta
 			publishPower(i);
 		publishState(UNSOLICITED);
 		publishAutoDiscovery();
+		if (UPDATE_INTERVAL > 0)
+		{
+			g_updateTimer.Initialize(UPDATE_INTERVAL);
+			g_updateTimer.Start();
+		}
 	}
 }
 
@@ -597,6 +608,13 @@ eventhandler MessageArrivedEventHandler(MqttClient client, MessageReceivedEventA
 eventhandler ErrorOccuredEventHandler(MqttClient client , ErrorOccuredEventArgs e)
 {
 	// not used at this time
+}
+
+
+eventhandler TimerExpiredEventHandler(UpdateTimer t, EventArgs e)
+{
+	if (connect_fb)
+		publishState(UNSOLICITED);
 }
 
 
