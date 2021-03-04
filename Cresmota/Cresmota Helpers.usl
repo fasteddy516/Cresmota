@@ -94,9 +94,17 @@ string_function CresmotaTopicBuilder(string arg_topic_1, string arg_topic_2, str
 }
 
 
+string_function CresmotaFallbackTopic(integer arg_id)
+{
+    string fallback_topic$[14];
+
+    makeString(fallback_topic$, "DVES_%s%02X_fb", right(ID_PREFIX, 4), arg_id);
+    return(fallback_topic$);
+}
+
 integer_function CresmotaNameIsValid(string arg_name)
 {
-    return (len(arg_name) && (arg_name != "x"));
+    return(len(arg_name) && (arg_name != "x"));
 }
 
 

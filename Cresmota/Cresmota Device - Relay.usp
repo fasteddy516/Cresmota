@@ -158,7 +158,7 @@ string_parameter GroupTopic[MAX_TOPIC_LENGTH];
 	propDefaultUnit = unitString;
 	propValidUnits = unitString;
 	propDefaultValue = "tasmotas";
-	propShortDescription = "Unique MQTT topic for this device.";
+	propShortDescription = "MQTT group topic. (default=tasmotas)";
 #end_parameter_properties
 
 integer_parameter AutoDiscovery;
@@ -192,11 +192,11 @@ string_parameter Name[MAX_RELAYS, MAX_RELAYS][MAX_NAME_LENGTH];
 
 /** MODULE INPUT/OUTPUT DEFINITIONS ******************************************/
 digital_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				_skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				enable, _skip_, state[MAX_RELAYS, MAX_RELAYS]
 ;
 digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				_skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				connect_fb, _skip_,
 				toggle[MAX_RELAYS], _skip_,
 				turn_on[MAX_RELAYS], _skip_,
@@ -257,6 +257,8 @@ function initializeModule()
 	}
 
 	g_client.AddSubscription(CresmotaTopicBuilder(TOPIC_CMND, Topic, "#"), QOS_0);
+	g_client.AddSubscription(CresmotaTopicBuilder(TOPIC_CMND, GroupTopic, "#"), QOS_0);
+	g_client.AddSubscription(CresmotaTopicBuilder(TOPIC_CMND, CresmotaFallbackTopic(CresmotaID), "#"), QOS_0);	
 }
 
 
