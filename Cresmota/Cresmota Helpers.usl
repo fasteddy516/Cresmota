@@ -1,6 +1,6 @@
 /** MODULE INFORMATION ********************************************************
 Name........: Cresmota Helper Library
-Version.....: 20210227
+Version.....: 20210303
 Author......: Edward Wright
 
 
@@ -28,7 +28,7 @@ SOFTWARE.
 
 
 *** REVISION HISTORY **********************************************************
-20210227 - initial release
+20210303 - initial release
 
 
 *** CONSTANT DEFINITIONS *****************************************************/
@@ -69,50 +69,27 @@ SOFTWARE.
 #define_constant UNSOLICITED    0
 #define_constant SOLICITED      1
 
-#define_constant T_WILL     0          
-#define_constant T_STATE    1          
-#define_constant T_CMNDSUB  2
-#define_constant T_DISCCFG  3
-#define_constant T_DISCSNS  4
-#define_constant T_RESULT   5
-#define_constant T_POWER    6 
-
 #define_constant C_ON       "ON"
 #define_constant C_OFF      "OFF"
 #define_constant C_TOGGLE   "TOGGLE"
 #define_constant C_HOLD     "HOLD"
 
 
-/** CUSTOM STRUCTURES ********************************************************/
-structure cresmota_struct
-{
-	string id[12];
-    string topic[MAX_TOPIC_LENGTH];
-};
-
-
 /** LIBRARY FUNCTIONS ********************************************************/
-function CresmotaInitialize(cresmota_struct cresmota, integer arg_id, string arg_topic)
+string_function CresmotaIDBuilder(integer arg_id)
 {
-    makeString(cresmota.id, "%s%02X", ID_PREFIX, arg_id);
-	cresmota.topic = arg_topic;
+    string id$[12];
+    
+    makeString(id$, "%s%02X", ID_PREFIX, arg_id);
+    return(id$);
 }
 
 
-string_function CresmotaTopic(cresmota_struct cresmota, integer arg_topic)
+string_function CresmotaTopicBuilder(string arg_topic_1, string arg_topic_2, string arg_topic_3)
 {
     string scratch$[MAX_TOPIC_LENGTH];
-    
-    switch (arg_topic)
-    {
-        case (T_WILL)       : { makeString(scratch$, "%s/%s/%s", TOPIC_TELE, cresmota.topic, TOPIC_LWT);        }
-        case (T_STATE)      : { makeString(scratch$, "%s/%s/%s", TOPIC_TELE, cresmota.topic, TOPIC_STATE);      }
-        case (T_CMNDSUB)    : { makeString(scratch$, "%s/%s/#", TOPIC_CMND, cresmota.topic);                    }
-        case (T_DISCCFG)    : { makeString(scratch$, "%s/%s/%s", TOPIC_DISCOVERY, cresmota.id, TOPIC_CONFIG);   }
-        case (T_DISCSNS)    : { makeString(scratch$, "%s/%s/%s", TOPIC_DISCOVERY, cresmota.id, TOPIC_SENSORS);  }
-        case (T_RESULT)     : { makeString(scratch$, "%s/%s/%s", TOPIC_STAT, cresmota.topic, TOPIC_RESULT);     }
-        case (T_POWER)      : { makeString(scratch$, "%s/%s/%s", TOPIC_STAT, cresmota.topic, TOPIC_POWER);      }
-    }
+
+    makeString(scratch$, "%s/%s/%s", arg_topic_1, arg_topic_2, arg_topic_3);
     return(scratch$);
 }
 

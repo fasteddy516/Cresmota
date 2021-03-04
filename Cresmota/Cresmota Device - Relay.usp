@@ -153,6 +153,14 @@ string_parameter Topic[MAX_TOPIC_LENGTH];
 	propShortDescription = "Unique MQTT topic for this device.";
 #end_parameter_properties
 
+string_parameter GroupTopic[MAX_TOPIC_LENGTH];
+#begin_parameter_properties GroupTopic
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propDefaultValue = "tasmotas";
+	propShortDescription = "Unique MQTT topic for this device.";
+#end_parameter_properties
+
 integer_parameter AutoDiscovery;
 #begin_parameter_properties AutoDiscovery
 	propDefaultUnit = unitDecimal;
@@ -199,9 +207,9 @@ digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 /** GLOBAL VARIABLES *********************************************************/
 integer	g_initialized, g_enabled, g_busy, g_numRelays;
 
-MqttClient g_client;
+string g_id$[12];
 
-cresmota_struct g_cresmota;
+MqttClient g_client;
 
 
 /** LOCAL FUNCTIONS **********************************************************/
@@ -209,12 +217,13 @@ function initializeModule()
 {
 	integer i;
 	
-	CresmotaInitialize(g_cresmota, CresmotaID, Topic);
+	g_id$ = CresmotaIDBuilder(CresmotaID);
+
 
 	g_client.Log(LOGGING);
 
 	g_client.Initialize(
-		g_cresmota.id,
+		g_id$,
 		Broker,
 		BrokerPort,
 		UseSSL,
@@ -223,7 +232,7 @@ function initializeModule()
 		on,
 		RETAIN_ON,
 		QOS_1,
-		CresmotaTopic(g_cresmota, T_WILL),
+		CresmotaTopicBuilder(TOPIC_TELE, Topic, TOPIC_LWT),
 		OFFLINE,
 		CLEAN_SESSION,
 		BUFFER_SIZE
@@ -247,8 +256,7 @@ function initializeModule()
 			break;
 	}
 
-
-	g_client.AddSubscription(CresmotaTopic(g_cresmota, T_CMNDSUB), QOS_0);
+	g_client.AddSubscription(CresmotaTopicBuilder(TOPIC_CMND, Topic, "#"), QOS_0);
 }
 
 
@@ -287,7 +295,7 @@ function publishAutoDiscovery()
 		message$ = message$ + "\x22hn\x22:\x22" + ClientID + "\x22,";
 
 		//add mac address (device id)
-		message$ = message$ + "\x22mac\x22:\x22" + g_cresmota.id + "\x22,";
+		message$ = message$ + "\x22mac\x22:\x22" + g_id$ + "\x22,";
 
 		// add module (template) name
 		message$ = message$ + "\x22md\x22:\x22" + MODULE_NAME + "\x22,";
@@ -361,18 +369,18 @@ function publishAutoDiscovery()
 		// closing brace
 		message$ = message$ + "}";
 
-		g_client.Publish(CresmotaTopic(g_cresmota, T_DISCCFG), message$, RETAIN_ON);
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, Topic, TOPIC_CONFIG), message$, RETAIN_ON);
 
 		// autodiscovery sensors message----------
 		makeString(message$, "{\x22sn\x22:{\x22Time\x22:\x22%s\x22},\x22ver\x22:1}", CresmotaTimeStamp());
-		g_client.Publish(CresmotaTopic(g_cresmota, T_DISCSNS), message$, RETAIN_ON);
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, Topic, TOPIC_SENSORS), message$, RETAIN_ON);
 	}
 	else // if autodiscovery is disabled, just make sure any previously retained topic is cleared
 	{
-		g_client.Publish(CresmotaTopic(g_cresmota, T_DISCCFG), "", RETAIN_ON);
-		g_client.Publish(CresmotaTopic(g_cresmota, T_DISCCFG), "", RETAIN_OFF);
-		g_client.Publish(CresmotaTopic(g_cresmota, T_DISCSNS), "", RETAIN_ON);
-		g_client.Publish(CresmotaTopic(g_cresmota, T_DISCSNS), "", RETAIN_OFF);
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, Topic, TOPIC_CONFIG), "", RETAIN_ON);
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, Topic, TOPIC_CONFIG), "", RETAIN_OFF);
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, Topic, TOPIC_SENSORS), "", RETAIN_ON);
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, Topic, TOPIC_SENSORS), "", RETAIN_OFF);
 	}
 }
 
@@ -407,17 +415,17 @@ function publishState(integer arg_byRequest)
 	message$ = message$ + "}";
 	
 	// publish to the normal telemetry topic
-	g_client.Publish(CresmotaTopic(g_cresmota, T_STATE), message$, RETAIN_OFF);
+	g_client.Publish(CresmotaTopicBuilder(TOPIC_TELE, Topic, TOPIC_STATE), message$, RETAIN_OFF);
 
 	// also publish to the response topic if this is a reply to a cmnd message
 	if (arg_byRequest)
-		g_client.Publish(CresmotaTopic(g_cresmota, T_RESULT), message$, RETAIN_OFF);
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_STAT, Topic, TOPIC_RESULT), message$, RETAIN_OFF);
 }
 
 
 function publishAvailability(string arg_status)
 {
-	g_client.Publish(CresmotaTopic(g_cresmota, T_WILL), arg_status, RETAIN_ON);
+	g_client.Publish(CresmotaTopicBuilder(TOPIC_TELE, Topic, TOPIC_LWT), arg_status, RETAIN_ON);
 }
 
 
@@ -426,15 +434,14 @@ function publishPower(integer arg_i)
 	string topic$[MAX_TOPIC_LENGTH], message$[MAX_MSG_LENGTH];
 
 	// send 'result'
-	topic$ = CresmotaTopic(g_cresmota, T_RESULT);
 	message$ = "{\x22POWER";
 	if ((g_numRelays > 1) || (arg_i > 1))
 		message$ = message$ + itoa(arg_i);
 	message$ = message$ + "\x22:\x22" + CresmotaOnOff(state[arg_i]) + "\x22}";
-	g_client.Publish(topic$, message$, RETAIN_OFF);
+	g_client.Publish(CresmotaTopicBuilder(TOPIC_STAT, Topic, TOPIC_RESULT), message$, RETAIN_OFF);
 
 	// send 'power'
-	topic$ = CresmotaTopic(g_cresmota, T_POWER);
+	topic$ = CresmotaTopicBuilder(TOPIC_STAT, Topic, TOPIC_POWER);
 	if ((g_numRelays > 1) || (arg_i > 1))
 		topic$ = topic$ + itoa(arg_i);
 	g_client.Publish(topic$, CresmotaOnOff(state[arg_i]), RETAIN_OFF);
@@ -528,7 +535,7 @@ threadsafe change state
 }
 
 /** EVENT HANDLERS ***********************************************************/
-eventhandler ConnectionStateChangedEventHandler(MqttClient client , ConnectionStateChangedEventArgs e)
+eventhandler ConnectionStateChangedEventHandler(MqttClient client, ConnectionStateChangedEventArgs e)
 {
 	connect_fb = e.State;
 

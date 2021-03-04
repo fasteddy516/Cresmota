@@ -145,30 +145,32 @@
   ParamSigType11=String
   ParamCue12=Topic
   ParamSigType12=String
-  ParamCue13=AutoDiscovery,0d,1d
-  ParamSigType13=List
-  ParamCue14=ReportAs,0d,1d
+  ParamCue13=GroupTopic
+  ParamSigType13=String
+  ParamCue14=AutoDiscovery,0d,1d
   ParamSigType14=List
-  ParamCue15=[~UNUSED~]
-  ParamSigType15=Constant
+  ParamCue15=ReportAs,0d,1d
+  ParamSigType15=List
   ParamCue16=[~UNUSED~]
   ParamSigType16=Constant
-  ParamCue17=Name[1]
-  ParamSigType17=String
-  ParamCue18=Name[2]
+  ParamCue17=[~UNUSED~]
+  ParamSigType17=Constant
+  ParamCue18=Name[1]
   ParamSigType18=String
-  ParamCue19=Name[3]
+  ParamCue19=Name[2]
   ParamSigType19=String
-  ParamCue20=Name[4]
+  ParamCue20=Name[3]
   ParamSigType20=String
-  ParamCue21=Name[5]
+  ParamCue21=Name[4]
   ParamSigType21=String
-  ParamCue22=Name[6]
+  ParamCue22=Name[5]
   ParamSigType22=String
-  ParamCue23=Name[7]
+  ParamCue23=Name[6]
   ParamSigType23=String
-  ParamCue24=Name[8]
+  ParamCue24=Name[7]
   ParamSigType24=String
+  ParamCue25=Name[8]
+  ParamSigType25=String
   MinVariableInputs=23
   MaxVariableInputs=23
   MinVariableInputsList2=0
@@ -177,8 +179,8 @@
   MaxVariableOutputs=41
   MinVariableOutputsList2=0
   MaxVariableOutputsList2=0
-  MinVariableParams=23
-  MaxVariableParams=23
+  MinVariableParams=24
+  MaxVariableParams=24
   Expand=expand_separately
   Expand2=expand_separately
   ProgramTree=Logic
@@ -207,7 +209,7 @@
   Pp12=12
   Pp13=13
   Pp14=14
-  Pp17=17
+  Pp15=15
   Pp18=18
   Pp19=19
   Pp20=20
@@ -215,7 +217,8 @@
   Pp22=22
   Pp23=23
   Pp24=24
-  MPp=24
+  Pp25=25
+  MPp=25
   NVStorage=10
   ParamSigType1=String
   SmplCInputCue1=o#
@@ -367,6 +370,16 @@
   ObjTp=Dp
   H=13
   Tp=1
+  SD=Unique MQTT topic for this device.
+  HD=True
+  DV=tasmotas
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=14
+  Tp=1
   SD=Enable/Disabled Home Assistant Auto Discovery.
   HD=True
   DV=1d
@@ -384,7 +397,7 @@
 [END]
 [BEGIN]
   ObjTp=Dp
-  H=14
+  H=15
   Tp=1
   SD=Choose how these relays will be advertised in autodiscovery.
   HD=True
@@ -400,16 +413,6 @@
   Lbl1=Relays
   Val2=1d
   Lbl2=Lights
-[END]
-[BEGIN]
-  ObjTp=Dp
-  H=17
-  Tp=1
-  SD=Friendly Name for individual relays.
-  HD=True
-  DV=
-  NoS=False
-  VVS=0
 [END]
 [BEGIN]
   ObjTp=Dp
@@ -474,6 +477,16 @@
 [BEGIN]
   ObjTp=Dp
   H=24
+  Tp=1
+  SD=Friendly Name for individual relays.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=25
   Tp=1
   SD=Friendly Name for individual relays.
   HD=True
