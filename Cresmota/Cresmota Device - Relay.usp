@@ -262,6 +262,30 @@ function initializeModule()
 }
 
 
+function publishInfo()
+{
+	string message$[BUFFER_SIZE];
+
+	// INFO1
+	
+	makeString(message$, "{\x22Module\x22:\x22%s\x22,\x22Version\x22:\x22%s\x22,\x22FallbackTopic\x22:\x22%s\x22,\x22GroupTopic\x22:\x22%s\x22}",
+		MODULE_NAME,
+		MODULE_VERSION,
+		CresmotaTopicBuilder(TOPIC_CMND, CresmotaFallbackTopic(CresmotaID), ""),
+		CresmotaTopicBuilder(TOPIC_CMND, GroupTopic, "")
+	);
+	g_client.Publish(CresmotaTopicBuilder(TOPIC_TELE, Topic, TOPIC_INFO1), message$, RETAIN_OFF);
+
+	// INFO2 (there is no real hostname - just use client id)
+	makeString(message$, "{\x22WebServerMode\x22:\x22Admin\x22,\x22Hostname\x22:\x22%s\x22,\x22IPAddress\x22:\x22x.x.x.x\x22}", ClientID);
+	g_client.Publish(CresmotaTopicBuilder(TOPIC_TELE, Topic, TOPIC_INFO2), message$, RETAIN_OFF);
+
+	// INFO3
+	message$ = "{\x22RestartReason\x22:\x22Software/System restart\x22}";
+	g_client.Publish(CresmotaTopicBuilder(TOPIC_TELE, Topic, TOPIC_INFO3), message$, RETAIN_OFF);
+}
+
+
 function publishAutoDiscovery()
 {
 	integer i;
@@ -536,14 +560,21 @@ threadsafe change state
 		publishPower(i);
 }
 
+
 /** EVENT HANDLERS ***********************************************************/
 eventhandler ConnectionStateChangedEventHandler(MqttClient client, ConnectionStateChangedEventArgs e)
 {
+	integer i;
+	
 	connect_fb = e.State;
 
 	if (connect_fb)
 	{
         publishAvailability(ONLINE);
+		publishInfo();
+		for (i = 1 to g_numRelays)
+			publishPower(i);
+		publishState(UNSOLICITED);
 		publishAutoDiscovery();
 	}
 }

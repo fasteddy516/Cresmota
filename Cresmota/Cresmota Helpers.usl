@@ -58,6 +58,9 @@ SOFTWARE.
 #define_constant TOPIC_STATE		"STATE"
 #define_constant TOPIC_RESULT       "RESULT"
 #define_constant TOPIC_POWER        "POWER"
+#define_constant TOPIC_INFO1        "INFO1"
+#define_constant TOPIC_INFO2        "INFO2"
+#define_constant TOPIC_INFO3        "INFO3"
 
 // readability constants - don't mess with these, code depends on them!
 #define_constant QOS_0  0           // mqtt qos level 0
