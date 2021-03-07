@@ -66,3 +66,38 @@ Topic: `tele/huzzah_1/state`, `retain=false`
     }
 }
 ```
+
+## Single Channel Dimmer
+
+**Tasmota Template:**  
+`{"NAME":"Huzzah","GPIO":[34,0,33,0,576,322,0,0,321,416,320,96,256,0],"FLAG":0,"BASE":73}`
+
+**State:**  
+Topic: `tele/huzzah_1/state`, `retain=false`
+```jsonc
+{
+    "Time": "2021-03-07T23:12:34",
+    "Uptime": "0T00:05:09",
+    "UptimeSec": 309,
+    "Heap": 28,
+    "SleepMode": "Dynamic",
+    "Sleep": 10,
+    "LoadAvg": 99,
+    "MqttCount": 1,
+    "POWER": "ON",
+    "Dimmer": 7,
+    "Fade": "OFF",
+    "Speed": 1,
+    "LedTable": "ON",
+    "Wifi": {
+        "AP": 1,
+        "SSId": "***REMOVED***",
+        "BSSId": "***REMOVED***",
+        "Channel": 11,
+        "RSSI": 62,
+        "Signal": -69,
+        "LinkCount": 1,
+        "Downtime": "0T00:00:03"
+    }
+}
+```

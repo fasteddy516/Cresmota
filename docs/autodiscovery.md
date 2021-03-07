@@ -1,7 +1,6 @@
 # AutoDiscovery Protocol
 
-For reference purposes, the following are examples of autodiscovery messages published by an Adafruit Huzzah running Tasmota 9.3.0 in various configurations.  The JSON has been expanded to a more easily readable format (actual discovery messages don't include the line breaks and spaces), and IP and MAC address have been replaced with `x.x.x.x` and `xxxxxxxxxxxx` respectively.
-
+For reference purposes, the following are examples of autodiscovery messages published by an Adafruit Huzzah running Tasmota 9.3.0 in various configurations.  The JSON has been expanded to a more easily readable format (actual discovery messages don't include the line breaks and spaces), and some fields (MAC, IP, SSID, etc.) have been masked for privacy reasons. The Huzzah was configured with `MQTT Topic` set to `huzzah_1`.
 
 ## Single Relay with Toggle
 
@@ -62,12 +61,13 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
 }
 ```
 
+## iFan03 Fan & Light Controller
 
 **Tasmota Template:**  
 `{"NAME":"Huzzah","GPIO":[32,0,320,0,3200,3232,0,0,512,256,225,226,227,0],"FLAG":0,"BASE":71}`
 
 **Autodiscovery:**  
-Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=false`
+Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=true`
 
 ```jsonc
 {
@@ -115,6 +115,64 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
 {
     "sn": {
         "Time":"2021-02-23T18:44:24"
+    },
+    "ver": 1
+}
+```
+
+## Single Channel Dimmer
+
+**Tasmota Template:**  
+`{"NAME":"Huzzah","GPIO":[34,0,33,0,576,322,0,0,321,416,320,96,256,0],"FLAG":0,"BASE":73}`
+
+**Autodiscovery:**  
+Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=true`
+```jsonc
+{
+    "ip": "***REMOVED***",
+    "dn": "Huzzah 1",
+    "fn": ["Relay 1", null, null, null, null, null, null, null],
+    "hn": "tasmota-huzzah",
+    "mac": "***REMOVED***",
+    "md": "Huzzah",
+    "ty": 0,
+    "if": 0,
+    "ofln": "Offline",
+    "onln": "Online",
+    "state": ["OFF", "ON", "TOGGLE", "HOLD"],
+    "sw": "9.3.0",
+    "t": "huzzah_1",
+    "ft": "%prefix%/%topic%/",
+    "tp": ["cmnd", "stat", "tele"],
+    "rl": [2, 0, 0, 0, 0, 0, 0, 0],
+    "swc": [-1, -1, -1, -1, -1, -1, -1, -1],
+    "swn": [null, null, null, null, null, null, null, null],
+    "btn": [0, 0, 0, 0, 0, 0, 0, 0],
+    "so": {
+        "4": 0,
+        "11": 0,
+        "13": 0,
+        "17": 0,
+        "20": 0,
+        "30": 1,
+        "68": 0,
+        "73": 0,
+        "82": 0,
+        "114": 0,
+        "117": 0
+    },
+    "lk": 1,
+    "lt_st": 1,
+    "sho": [0, 0, 0, 0],
+    "ver": 1
+}
+```
+
+Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
+```jsonc
+{
+    "sn": {
+        "Time": "2021-03-07T23:07:39"
     },
     "ver": 1
 }
