@@ -198,7 +198,8 @@ digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 
 
 /** GLOBAL VARIABLES *********************************************************/
-integer	g_initialized, g_enabled, g_busy, g_processing, g_changeDetected;
+integer	g_initialized, g_enabled, g_busy, g_processing, g_changeDetected,
+		g_lightEnabled;
 
 string g_id$[12];
 
@@ -226,7 +227,7 @@ function initializeModule()
 	integer i;
 	
 	g_id$ = CresmotaIDBuilder(CresmotaID);
-
+	g_lightEnabled = CresmotaNameIsValid(LightName);
 
 	g_client.Log(LOGGING);
 
@@ -305,8 +306,12 @@ function publishAutoDiscovery()
 		message$ = message$ + "\x22dn\x22:\x22" + DeviceName + "\x22,";
 	
 		// add friendly names
-		message$ = message$ + "\x22fn\x22:[\x22" + LightName + "\x22,";
-		message$ = message$ + "\x22Tasmota2\x22,\x22Tasmota3\x22,\x22Tasmota4\x22,null,null,null,null],";
+		message$ = message$ + "\x22fn\x22:[\x22";
+		if (g_lightEnabled)
+			message$ = message$ + LightName;
+		else
+			message$ = message$ + "Tasmota1";
+		message$ = message$ + "\x22,\x22Tasmota2\x22,\x22Tasmota3\x22,\x22Tasmota4\x22,null,null,null,null],";
 
 		// add hostname (just use ClientID - there is no actual hostname for this device)
 		message$ = message$ + "\x22hn\x22:\x22" + ClientID + "\x22,";
@@ -336,7 +341,12 @@ function publishAutoDiscovery()
 		message$ = message$ + "\x22ft\x22:\x22%prefix%/%topic%/\x22,\x22tp\x22:[\x22cmnd\x22,\x22stat\x22,\x22tele\x22],";
 		
 		// add relay types
-		message$ = message$ + "\x22rl\x22:[2,0,0,0,0,0,0,0],";
+		message$ = message$ + "\x22rl\x22:[";
+		if (g_lightEnabled)
+			message$ = message$ + "2";
+		else
+			message$ = message$ + "0";
+		message$ = message$ + ",0,0,0,0,0,0,0],";
 		
 		// add switch types (no switches for this module)
 		message$ = message$ + "\x22swc\x22:[-1,-1,-1,-1,-1,-1,-1,-1],";
@@ -407,7 +417,8 @@ function publishState(integer arg_byRequest)
     message$ = message$ + "\x22Uptime\x22:\x220T00:00:00\x22,\x22UptimeSec\x22: 0,\x22Heap\x22:28,\x22SleepMode\x22:\x22Dynamic\x22,\x22Sleep\x22:50,\x22LoadAvg\x22:19,\x22MqttCount\x22:1,";
 
     // add light state as reported by digital input
-	message$ = message$ + "\x22POWER1\x22:\x22" + CresmotaOnOff(light_state) + "\x22,";
+	if (g_lightEnabled)
+		message$ = message$ + "\x22POWER1\x22:\x22" + CresmotaOnOff(light_state) + "\x22,";
 
 	// add fan speed as reported by digital inputs
 	message$ = message$ + "\x22FanSpeed\x22:\x22" + itoa(processFanSpeed()) + "\x22,";
@@ -437,6 +448,8 @@ function publishPower()
 {
 	string topic$[MAX_TOPIC_LENGTH], message$[MAX_MSG_LENGTH];
 
+	if (!g_lightEnabled) return;
+	
 	// send 'result'
 	message$ = "{\x22POWER1\x22:\x22" + CresmotaOnOff(light_state) + "\x22}";
 	g_client.Publish(CresmotaTopicBuilder(TOPIC_STAT, Topic, TOPIC_RESULT), message$, RETAIN_OFF);
@@ -462,6 +475,8 @@ function publishFanSpeed()
 
 function processPowerCommand(string arg_cmd)
 {
+	if (!g_lightEnabled) return;
+	
 	if (arg_cmd = C_ON)
 	{
 		pulse(1, light_on);
