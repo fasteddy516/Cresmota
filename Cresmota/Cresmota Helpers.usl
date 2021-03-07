@@ -1,6 +1,6 @@
 /** MODULE INFORMATION ********************************************************
 Name........: Cresmota Helper Library
-Version.....: 20210303
+Version.....: 20210307
 Author......: Edward Wright
 
 
@@ -28,7 +28,7 @@ SOFTWARE.
 
 
 *** REVISION HISTORY **********************************************************
-20210303 - initial release
+20210307 - initial release
 
 
 *** CONSTANT DEFINITIONS *****************************************************/
@@ -62,6 +62,7 @@ SOFTWARE.
 #define_constant TOPIC_INFO1        "INFO1"
 #define_constant TOPIC_INFO2        "INFO2"
 #define_constant TOPIC_INFO3        "INFO3"
+#define_constant TOPIC_FANSPEED     "FanSpeed"
 
 // readability constants - don't mess with these, code depends on them!
 #define_constant QOS_0  0           // mqtt qos level 0
