@@ -1,6 +1,6 @@
 /** MODULE INFORMATION ********************************************************
 Name........: Cresmota - Relays
-Version.....: 20210227
+Version.....: 20210306
 Author......: Edward Wright
 
 
@@ -28,14 +28,14 @@ SOFTWARE.
 
 
 *** REVISION HISTORY **********************************************************
-20210227 - initial release
+20210306 - initial release
 
 
 /** COMPILER DIRECTIVES ******************************************************/
 #symbol_name "Cresmota Device - Relay"
 #category "46" "Cresmota"
 #user_simplsharp_library "SimplMQTT.Client"
-#user_simplsharp_library "SPlusUpdateTimer"
+#user_simplsharp_library "SPlusPeriodicTimer"
 #user_library "Cresmota Helpers"
 #default_volatile
 #enable_stack_checking
@@ -212,7 +212,7 @@ string g_id$[12];
 
 MqttClient g_client;
 
-UpdateTimer g_updateTimer;
+PeriodicTimer g_updateTimer;
 
 
 /** LOCAL FUNCTIONS **********************************************************/
@@ -244,7 +244,7 @@ function initializeModule()
 	RegisterEvent (g_client, MessageArrived, MessageArrivedEventHandler);
 	RegisterEvent (g_client, ErrorOccured, ErrorOccuredEventHandler);
 	RegisterEvent (g_client, ConnectionStateChanged, ConnectionStateChangedEventHandler);
-	RegisterEvent (g_updateTimer, TimerExpired, TimerExpiredEventHandler);
+	RegisterDelegate (g_updateTimer, PeriodicTimerCallback, UpdateEvent);
 	
 	if (UseSSL)
 	{
@@ -399,11 +399,11 @@ function publishAutoDiscovery()
 		// closing brace
 		message$ = message$ + "}";
 
-		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, Topic, TOPIC_CONFIG), message$, RETAIN_ON);
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, g_id$, TOPIC_CONFIG), message$, RETAIN_ON);
 
 		// autodiscovery sensors message----------
 		makeString(message$, "{\x22sn\x22:{\x22Time\x22:\x22%s\x22},\x22ver\x22:1}", CresmotaTimeStamp());
-		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, Topic, TOPIC_SENSORS), message$, RETAIN_ON);
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, g_id$, TOPIC_SENSORS), message$, RETAIN_ON);
 	}
 	else // if autodiscovery is disabled, just make sure any previously retained topic is cleared
 	{
@@ -567,6 +567,14 @@ threadsafe change state
 }
 
 
+/** CALLBACK FUNCTIONS *******************************************************/
+callback function UpdateEvent()
+{
+	if (connect_fb)
+		publishState(UNSOLICITED);
+}
+
+
 /** EVENT HANDLERS ***********************************************************/
 eventhandler ConnectionStateChangedEventHandler(MqttClient client, ConnectionStateChangedEventArgs e)
 {
@@ -608,13 +616,6 @@ eventhandler MessageArrivedEventHandler(MqttClient client, MessageReceivedEventA
 eventhandler ErrorOccuredEventHandler(MqttClient client , ErrorOccuredEventArgs e)
 {
 	// not used at this time
-}
-
-
-eventhandler TimerExpiredEventHandler(UpdateTimer t, EventArgs e)
-{
-	if (connect_fb)
-		publishState(UNSOLICITED);
 }
 
 
