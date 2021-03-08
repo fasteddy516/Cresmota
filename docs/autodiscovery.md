@@ -129,11 +129,11 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
 Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=true`
 ```jsonc
 {
-    "ip": "***REMOVED***",
+    "ip": "x.x.x.x",
     "dn": "Huzzah 1",
     "fn": ["Relay 1", null, null, null, null, null, null, null],
     "hn": "tasmota-huzzah",
-    "mac": "***REMOVED***",
+    "mac": "xxxxxxxxxxxx",
     "md": "Huzzah",
     "ty": 0,
     "if": 0,

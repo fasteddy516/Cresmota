@@ -91,8 +91,8 @@ Topic: `tele/huzzah_1/state`, `retain=false`
     "LedTable": "ON",
     "Wifi": {
         "AP": 1,
-        "SSId": "***REMOVED***",
-        "BSSId": "***REMOVED***",
+        "SSId": "xxxx",
+        "BSSId": "xx:xx:xx:xx:xx:xx",
         "Channel": 11,
         "RSSI": 62,
         "Signal": -69,
