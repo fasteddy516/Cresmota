@@ -1,0 +1,718 @@
+/** MODULE INFORMATION ********************************************************
+Name........: Cresmota - Dimmer
+Version.....: 20210309
+Author......: Edward Wright
+
+
+*** MIT LICENSE ***************************************************************
+
+Copyright (c) 2021 Edward Wright
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+*** REVISION HISTORY **********************************************************
+20210309 - initial release
+
+
+/** COMPILER DIRECTIVES ******************************************************/
+#symbol_name "Cresmota Device - Dimmer"
+#category "46" "Cresmota"
+#user_simplsharp_library "SimplMQTT.Client"
+#user_simplsharp_library "SPlusPeriodicTimer"
+#user_library "Cresmota Helpers"
+#default_volatile
+#enable_stack_checking
+
+
+/** CONSTANT DEFINITIONS *****************************************************/
+#define_constant MODULE_NAME	"Cresmota Dimmer"
+#define_constant MODULE_VERSION	"0.1.0"
+
+#define_constant LOGGING	1
+
+// autodiscovery configuration
+#define_constant TUYA_FLAG		"0"	// set to 1 for tuya dimmer 
+#define_constant IFAN_FLAG		"0"	// set to 1 for fan controller
+#define_constant LIGHT_LINK		"1"	// RGB/CT light link state
+#define_constant LIGHT_SUBTYPE	"1"	// light subtype
+#define_constant SETOPTION_4	"0"	// not supported - leave at 0
+#define_constant SETOPTION_11	"0"	// not supported - leave at 0
+#define_constant SETOPTION_13	"0"	// not supported - leave at 0
+#define_constant SETOPTION_17	"0"	// not supported - leave at 0
+#define_constant SETOPTION_20	"0"	// not supported - leave at 0
+#define_constant SETOPTION_30	"1"	// set to 1 to enforce discovery of relays as lights
+#define_constant SETOPTION_68	"0"	// not supported - leave at 0
+#define_constant SETOPTION_73	"0"	// set to 1 to detach buttons from relays
+#define_constant SETOPTION_82	"0"	// not supported - leave at 0
+#define_constant SETOPTION_114	"0"	// set to 1 to detach switches from relays
+#define_constant SETOPTION_117	"0"	// not supported - leave at 0
+
+
+/** PARAMETER DEFINITIONS ****************************************************/
+string_parameter DeviceName[MAX_NAME_LENGTH];
+#begin_parameter_properties DeviceName
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propShortDescription = "Friendly name for this device.";
+#end_parameter_properties
+
+integer_parameter CresmotaID;
+#begin_parameter_properties CresmotaID
+	propDefaultUnit = unitDecimal;
+	propValidUnits = unitDecimal;
+	propBounds = 0d, 254d;
+	propDefaultValue = 0d;
+	propShortDescription = "Cresmota ID number.  Must be unique for each Cresmota device connecting to the same MQTT broker.";
+#end_parameter_properties
+
+string_parameter ClientID[MAX_NAME_LENGTH];
+#begin_parameter_properties ClientID
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propShortDescription = "String used to identify the client to the broker - must be unique for each client.";
+#end_parameter_properties
+
+string_parameter Broker[14];
+#begin_parameter_properties Broker
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propShortDescription = "IP address of the MQTT broker.";
+#end_parameter_properties
+
+integer_parameter BrokerPort;
+#begin_parameter_properties BrokerPort
+	propDefaultUnit = unitDecimal;
+	propValidUnits = unitDecimal;
+	propBounds = 1025d, 65535d;
+	propDefaultValue = 1883d;
+	propShortDescription = "TCP port used by the MQTT broker (default = 1883, or 8883 for SSL).";
+#end_parameter_properties
+
+string_parameter Username[50];
+#begin_parameter_properties Username
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propDefaultValue = "";
+	propShortDescription = "Username to authenticate with the broker.";
+#end_parameter_properties
+
+string_parameter Password[50];
+#begin_parameter_properties Password
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propDefaultValue = "";
+	propShortDescription = "Password to authenticate with the broker.";
+#end_parameter_properties
+
+integer_parameter UseSSL;
+#begin_parameter_properties UseSSL
+	propDefaultUnit = unitDecimal;
+	propValidUnits = unitDecimal;
+	propDefaultValue = 0d;
+	propList = {0d, "No"}, {1d, "Yes"};
+	propShortDescription = "Set to True to enable SSL encryption.";
+#end_parameter_properties
+
+string_parameter SSLCertificateFile[100];
+#begin_parameter_properties SSLCertificateFile
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propDefaultValue = "x";
+	propShortDescription = "Filename of SSL Certificate (must be located in NVRAM folder).";
+#end_parameter_properties
+
+string_parameter SSLPrivateKeyFile[100];
+#begin_parameter_properties SSLPrivateKeyFile
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propDefaultValue = "x";
+	propShortDescription = "Filename of SSL Private Key (must be located in NVRAM folder).";
+#end_parameter_properties
+
+string_parameter Topic[MAX_TOPIC_LENGTH];
+#begin_parameter_properties Topic
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propDefaultValue = "";
+	propShortDescription = "Unique MQTT topic for this device.";
+#end_parameter_properties
+
+string_parameter GroupTopic[MAX_TOPIC_LENGTH];
+#begin_parameter_properties GroupTopic
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propDefaultValue = "tasmotas";
+	propShortDescription = "MQTT group topic. (default=tasmotas)";
+#end_parameter_properties
+
+integer_parameter AutoDiscovery;
+#begin_parameter_properties AutoDiscovery
+	propDefaultUnit = unitDecimal;
+	propValidUnits = unitDecimal;
+	propDefaultValue = 1d;
+	propList = {0d, "Disabled"}, {1d, "Enabled"};
+	propShortDescription = "Enable/Disable Home Assistant Auto Discovery.";
+#end_parameter_properties
+
+string_parameter _skip_;
+
+string_parameter LightName[MAX_NAME_LENGTH];
+#begin_parameter_properties LightName
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propDefaultValue = "Light";
+	propShortDescription = "Friendly Name for light.";
+#end_parameter_properties
+
+integer_parameter Debounce;
+#begin_parameter_properties Debounce
+	propDefaultUnit = unitDecimal;
+	propValidUnits = unitDecimal;
+	propBounds = 0d, 100d;
+	propDefaultValue = 50d;
+	propShortDescription = "Settling time for changes on light_level_in before publishing. (in 1/100 of a second)";
+#end_parameter_properties
+
+integer_parameter RetainLevel;
+#begin_parameter_properties RetainLevel
+	propDefaultUnit = unitDecimal;
+	propValidUnits = unitDecimal;
+	propDefaultValue = 0d;
+	propList = {0d, "Disabled"}, {1d, "Enabled"};
+	propShortDescription = "Enables retention of the last 'on' value to be recalled when light is turned 'on'.";
+#end_parameter_properties
+
+
+/** MODULE INPUT/OUTPUT DEFINITIONS ******************************************/
+digital_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, enable, _skip_, _skip_,	_skip_, _skip_
+;
+digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, connect_fb, _skip_,	light_on, light_off, _skip_
+;
+analog_input	light_level_in
+;
+analog_output	light_level_out
+;
+
+/** GLOBAL VARIABLES *********************************************************/
+integer	g_initialized, g_enabled, g_busy, g_processing, g_changeDetected,
+		g_lastLevel, g_storedLevel;
+
+string g_id$[12];
+
+MqttClient g_client;
+
+PeriodicTimer g_updateTimer;
+
+
+/** LOCAL FUNCTIONS **********************************************************/
+integer_function ScaleDown(integer arg_level)
+{
+	// converts from (0-65535) to (0-100)
+	if (arg_level = 0)
+		return(0);
+	else if (arg_level = 65535)
+		return(100);
+	else
+		return((arg_level * 10000) / 6553500);
+}
+
+integer_function ScaleUp(integer arg_level)
+{
+	// converts from (0-100) to (0-65535)
+	// note that we add '1' to arg_level in the standard conversion
+	if (arg_level = 0)
+		return(0);
+	else if (arg_level = 100)
+		return(65535);
+	else
+		return(((arg_level + 1) * 65535) / 100);
+}
+
+function initializeModule()
+{
+	integer i;
+	
+	g_id$ = CresmotaIDBuilder(CresmotaID);
+
+	g_client.Log(LOGGING);
+
+	g_client.Initialize(
+		g_id$,
+		Broker,
+		BrokerPort,
+		UseSSL,
+		Username,
+		Password,
+		on,
+		RETAIN_ON,
+		QOS_1,
+		CresmotaTopicBuilder(TOPIC_TELE, Topic, TOPIC_LWT),
+		OFFLINE,
+		CLEAN_SESSION,
+		BUFFER_SIZE
+	);
+
+	RegisterEvent (g_client, MessageArrived, MessageArrivedEventHandler);
+	RegisterEvent (g_client, ErrorOccured, ErrorOccuredEventHandler);
+	RegisterEvent (g_client, ConnectionStateChanged, ConnectionStateChangedEventHandler);
+	RegisterDelegate (g_updateTimer, PeriodicTimerCallback, UpdateEvent);
+	
+	if (UseSSL)
+	{
+		if ((len(SSLCertificateFile) > 1) && (len(SSLPrivateKeyFile) > 1))
+			g_client.UseCertificate(SSLCertificateFile, SSLPrivateKeyFile);
+	}
+
+	g_client.AddSubscription(CresmotaTopicBuilder(TOPIC_CMND, Topic, "#"), QOS_0);
+	g_client.AddSubscription(CresmotaTopicBuilder(TOPIC_CMND, GroupTopic, "#"), QOS_0);
+	g_client.AddSubscription(CresmotaTopicBuilder(TOPIC_CMND, CresmotaFallbackTopic(CresmotaID), "#"), QOS_0);	
+}
+
+
+function publishInfo()
+{
+	string message$[BUFFER_SIZE];
+
+	// INFO1
+	makeString(message$, "{\x22Module\x22:\x22%s\x22,\x22Version\x22:\x22%s\x22,\x22FallbackTopic\x22:\x22%s\x22,\x22GroupTopic\x22:\x22%s\x22}",
+		MODULE_NAME,
+		MODULE_VERSION,
+		CresmotaTopicBuilder(TOPIC_CMND, CresmotaFallbackTopic(CresmotaID), ""),
+		CresmotaTopicBuilder(TOPIC_CMND, GroupTopic, "")
+	);
+	g_client.Publish(CresmotaTopicBuilder(TOPIC_TELE, Topic, TOPIC_INFO1), message$, RETAIN_OFF);
+
+	// INFO2 (there is no real hostname - just use client id)
+	makeString(message$, "{\x22WebServerMode\x22:\x22Admin\x22,\x22Hostname\x22:\x22%s\x22,\x22IPAddress\x22:\x22x.x.x.x\x22}", ClientID);
+	g_client.Publish(CresmotaTopicBuilder(TOPIC_TELE, Topic, TOPIC_INFO2), message$, RETAIN_OFF);
+
+	// INFO3
+	message$ = "{\x22RestartReason\x22:\x22Software/System restart\x22}";
+	g_client.Publish(CresmotaTopicBuilder(TOPIC_TELE, Topic, TOPIC_INFO3), message$, RETAIN_OFF);
+}
+
+
+function publishAutoDiscovery()
+{
+	integer i;
+	string message$[BUFFER_SIZE], scratch$[512];
+	
+	if (AutoDiscovery)
+	{
+		// autodiscovery config message ----------
+		// opening brace
+		message$ = "{";
+	
+		// add ip address (just send a throwaway value)
+		message$ = message$ + "\x22ip\x22:\x22x.x.x.x\x22,";
+	
+		// add device name
+		message$ = message$ + "\x22dn\x22:\x22" + DeviceName + "\x22,";
+	
+		// add friendly names
+		message$ = message$ + "\x22fn\x22:[\x22";
+		if (CresmotaNameIsValid(LightName))
+			message$ = message$ + LightName;
+		else
+			message$ = message$ + "Relay 1";
+		message$ = message$ + "\x22,null,null,null,null,null,null,null],";
+
+		// add hostname (just use ClientID - there is no actual hostname for this device)
+		message$ = message$ + "\x22hn\x22:\x22" + ClientID + "\x22,";
+
+		//add mac address (device id)
+		message$ = message$ + "\x22mac\x22:\x22" + g_id$ + "\x22,";
+
+		// add module (template) name
+		message$ = message$ + "\x22md\x22:\x22" + MODULE_NAME + "\x22,";
+
+		// add tuya flag (set to 1 if this module is emulating a tuya dimmer)
+		message$ = message$ + "\x22ty\x22:" + TUYA_FLAG + ",";
+		
+		// add ifan flag (set to 1 if this module is emulating a fan/light controller)
+		message$ = message$ + "\x22if\x22:" + IFAN_FLAG + ",";
+		
+		// add static stuff (we are staying with tasmota defaults here)
+		message$ = message$ + "\x22ofln\x22:\x22Offline\x22,\x22onln\x22:\x22Online\x22,\x22state\x22:[\x22OFF\x22,\x22ON\x22,\x22TOGGLE\x22,\x22HOLD\x22],";
+	
+		// add software version
+		message$ = message$ + "\x22sw\x22:\x22" + MODULE_VERSION + "\x22,";
+	
+		// add mqtt topic
+		message$ = message$ + "\x22t\x22:\x22" + Topic + "\x22,";
+	
+		// add static stuff (we are staying with tasmota defaults here)
+		message$ = message$ + "\x22ft\x22:\x22%prefix%/%topic%/\x22,\x22tp\x22:[\x22cmnd\x22,\x22stat\x22,\x22tele\x22],";
+		
+		// add relay types
+		message$ = message$ + "\x22rl\x22:[2,0,0,0,0,0,0,0],";
+		
+		// add switch types (no switches for this module)
+		message$ = message$ + "\x22swc\x22:[-1,-1,-1,-1,-1,-1,-1,-1],";
+	    
+		// add switch names (no switches for this module)
+		message$ = message$ + "\x22swn\x22:[null,null,null,null,null,null,null,null],";
+	    
+		// add button enables (no buttons for this module)
+		message$ = message$ + "\x22btn\x22:[0,0,0,0,0,0,0,0],";    
+
+		// add SetOptions
+		message$ = message$ + "\x22so\x22:{";
+		message$ = message$ + "\x224\x22:" + SETOPTION_4 + ",";
+		message$ = message$ + "\x2211\x22:" + SETOPTION_11 + ",";
+		message$ = message$ + "\x2213\x22:" + SETOPTION_13 + ",";
+		message$ = message$ + "\x2217\x22:" + SETOPTION_17 + ",";
+		message$ = message$ + "\x2220\x22:" + SETOPTION_20 + ",";
+		message$ = message$ + "\x2230\x22:" + SETOPTION_30 + ",";
+		message$ = message$ + "\x2268\x22:" + SETOPTION_68 + ",";
+		message$ = message$ + "\x2273\x22:" + SETOPTION_73 + ",";
+		message$ = message$ + "\x2282\x22:" + SETOPTION_82 + ",";
+		message$ = message$ + "\x22114\x22:" + SETOPTION_114 + ",";
+		message$ = message$ + "\x22117\x22:" + SETOPTION_117 + "},";
+
+		// add light rgb/ct link state
+		message$ = message$ + "\x22lk\x22:" + LIGHT_LINK + ",";
+		
+		// add light subtype
+		message$ = message$ + "\x22lt_st\x22:" + LIGHT_SUBTYPE + ",";
+		
+		// add shutter options (not currently supported in cresmota)
+		message$ = message$ + "\x22sho\x22:[0,0,0,0],";
+
+		// add protocol version		
+		message$ = message$ + "\x22ver\x22:1";
+
+		// closing brace
+		message$ = message$ + "}";
+
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, g_id$, TOPIC_CONFIG), message$, RETAIN_ON);
+
+		// autodiscovery sensors message----------
+		makeString(message$, "{\x22sn\x22:{\x22Time\x22:\x22%s\x22},\x22ver\x22:1}", CresmotaTimeStamp());
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, g_id$, TOPIC_SENSORS), message$, RETAIN_ON);
+	}
+	else // if autodiscovery is disabled, just make sure any previously retained topic is cleared
+	{
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, Topic, TOPIC_CONFIG), "", RETAIN_ON);
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, Topic, TOPIC_CONFIG), "", RETAIN_OFF);
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, Topic, TOPIC_SENSORS), "", RETAIN_ON);
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, Topic, TOPIC_SENSORS), "", RETAIN_OFF);
+	}
+}
+
+
+function publishState(integer arg_byRequest)
+{
+	integer	i;
+	string message$[BUFFER_SIZE], scratch$[512];
+	
+	// opening brace
+	message$ = "{";
+
+	// add timestamp
+    message$ = message$ + "\x22Time\x22:\x22" + CresmotaTimeStamp() + "\x22,";
+
+	// add static values for statistics we don't track
+    message$ = message$ + "\x22Uptime\x22:\x220T00:00:00\x22,\x22UptimeSec\x22: 0,\x22Heap\x22:28,\x22SleepMode\x22:\x22Dynamic\x22,\x22Sleep\x22:50,\x22LoadAvg\x22:19,\x22MqttCount\x22:1,";
+
+    // add dimmer on/off state 
+	message$ = message$ + "\x22POWER\x22:\x22" + CresmotaOnOff(ScaleDown(light_level_in)) + "\x22,";
+
+	// add dimmer level
+	message$ = message$ + "\x22Dimmer\x22:" + itoa(ScaleDown(light_level_in)) + ",";
+    
+	// add dimmer fade setting (only 'off' is supported for now)
+	message$ = message$ + "\x22Fade\x22:\x22OFF\x22,";
+
+	// add dimmer speed setting (only '1' is supported for now)
+	message$ = message$ + "\x22Speed\x22:1,";
+    
+	// add dimmer led table feedback value
+	message$ = message$ + "\x22LedTable\x22:\x22ON\x22,";
+
+	// add static values for wifi stuff that is irrelevant here
+	message$ = message$ + "\x22Wifi\x22:{\x22AP\x22:1,\x22SSId\x22:\x22x\x22,\x22BSSId\x22:\x22xx:xx:xx:xx:xx:xx\x22,\x22Channel\x22:1,\x22RSSI\x22:70,\x22Signal\x22:-65,\x22LinkCount\x22:1,\x22Downtime\x22:\x220T00:00:00\x22}";
+
+	// closing brace
+	message$ = message$ + "}";
+	
+	// publish to the normal telemetry topic
+	g_client.Publish(CresmotaTopicBuilder(TOPIC_TELE, Topic, TOPIC_STATE), message$, RETAIN_OFF);
+
+	// also publish to the response topic if this is a reply to a cmnd message
+	if (arg_byRequest)
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_STAT, Topic, TOPIC_RESULT), message$, RETAIN_OFF);
+}
+
+
+function publishAvailability(string arg_status)
+{
+	g_client.Publish(CresmotaTopicBuilder(TOPIC_TELE, Topic, TOPIC_LWT), arg_status, RETAIN_ON);
+}
+
+
+function publishPower(integer arg_level, integer arg_fullUpdate)
+{
+	string	message$[MAX_MSG_LENGTH];
+
+	// send 'result'
+	message$ = "{\x22POWER\x22:\x22" + CresmotaOnOff(arg_level) + "\x22,\x22Dimmer\x22:" + itoa(arg_level) + "}";
+	g_client.Publish(CresmotaTopicBuilder(TOPIC_STAT, Topic, TOPIC_RESULT), message$, RETAIN_OFF);
+
+	// send 'power'
+	if (arg_fullUpdate)
+		g_client.Publish(CresmotaTopicBuilder(TOPIC_STAT, Topic, TOPIC_POWER), CresmotaOnOff(arg_level), RETAIN_OFF);
+}
+
+function powerOn()
+{
+	if (RetainLevel && g_storedLevel)
+		light_level_out = ScaleUp(g_storedLevel);
+	else
+		pulse(1, light_on);
+}
+
+function powerOff()
+{
+	integer currentLevel;
+
+	currentLevel = ScaleDown(light_level_in);
+	if (currentLevel)
+		g_storedLevel = currentLevel;
+	pulse(1, light_off);
+}
+
+function processPowerCommand(string arg_cmd)
+{
+	if (arg_cmd = C_ON)
+	{
+		powerOn();
+	}
+
+	else if (arg_cmd = C_OFF)
+	{
+		powerOff();		
+	}
+
+	else if (arg_cmd = C_TOGGLE)
+	{
+		if (ScaleDown(light_level_in))
+			powerOff();
+		else
+			powerOn();
+	}
+
+	else if (arg_cmd = "")
+	{
+		publishPower(ScaleDown(light_level_in), FULL_UPDATE);
+	}
+}
+
+function processDimmerCommand(integer arg_level)
+{
+	light_level_out = ScaleUp(arg_level);
+}
+
+
+/** MODULE EVENTS ************************************************************/
+change enable
+{
+	if (g_busy) terminateEvent;
+
+	g_busy = on;
+
+		try
+		{
+			while (!g_initialized) delay(10);
+
+			delay(10); // pseudo-debounce delay
+
+			// keep changing state as long as necessary to match 'enable' input
+			while (enable != g_enabled)
+			{
+				// enable the module
+				if (enable)
+				{
+					g_client.Start();
+					
+					g_storedLevel = ScaleDown(light_level_in);					
+					
+					g_enabled = on;
+				}
+
+				// disable the module
+				else
+				{
+					// if we're currently connected, publish current state and manually send will
+					if (connect_fb)
+					{
+						publishState(UNSOLICITED);
+						publishAvailability(OFFLINE);
+						processLogic();
+					}
+					g_client.Stop();
+					if (UPDATE_INTERVAL > 0)
+						g_updateTimer.Stop();
+					
+					g_enabled = off;
+				}
+			}
+		}	
+		catch
+		{
+			generateUserWarning("Exception caught in 'enable' event");
+		}
+
+	g_busy = off;	
+}
+
+
+change light_level_in
+{
+	integer currentLevel, startLevel;
+
+	g_changeDetected = on;
+	
+	if (g_processing) terminateEvent;
+
+	g_processing = on;
+	
+	try
+	{
+		startLevel = g_lastLevel;
+
+		while (g_changeDetected)
+		{
+			g_changeDetected = off;
+			if (connect_fb)
+			{
+				delay(Debounce); // delay here to allow state to settle before publishing
+				currentLevel = ScaleDown(light_level_in);
+				if (currentLevel <> g_lastLevel)
+				{
+					if ((g_lastLevel = 0) || (currentLevel = 0))
+						publishPower(currentLevel, FULL_UPDATE);
+					else
+						publishPower(currentLevel, RESULT_ONLY);
+					g_lastLevel = currentLevel;
+				}
+			}
+		}
+		if (g_lastLevel = 0)
+			g_storedLevel = startLevel;
+	}
+	catch
+	{
+		generateUserWarning("Exception caught in 'fan speed state change' event");
+	}
+
+	g_processing = off;
+}
+
+
+/** CALLBACK FUNCTIONS *******************************************************/
+callback function UpdateEvent()
+{
+	if (connect_fb)
+		publishState(UNSOLICITED);
+}
+
+
+/** EVENT HANDLERS ***********************************************************/
+eventhandler ConnectionStateChangedEventHandler(MqttClient client, ConnectionStateChangedEventArgs e)
+{
+	integer i;
+	
+	connect_fb = e.State;
+
+	if (connect_fb)
+	{
+        publishAvailability(ONLINE);
+		publishInfo();
+		publishPower(ScaleDown(light_level_in), FULL_UPDATE);
+		publishState(UNSOLICITED);
+		publishAutoDiscovery();
+		if (UPDATE_INTERVAL > 0)
+		{
+			g_updateTimer.Initialize(UPDATE_INTERVAL);
+			g_updateTimer.Start();
+		}
+	}
+}
+
+
+eventhandler MessageArrivedEventHandler(MqttClient client, MessageReceivedEventArgs e)                                                                       
+{
+	string topic$[MAX_TOPIC_LENGTH], value$[MAX_MSG_LENGTH];
+	
+	if (findNoCase(TOPIC_BACKLOG, e.Topic))
+	{
+		value$ = e.Value;
+		topic$ = remove(";", value$); // remove "NoDelay;" prefix from backlog
+		topic$ = remove(" ", value$); // remove command (i.e. "Power1", "Dimmer", etc.) from backlog
+	}
+	else
+	{
+		topic$ = e.Topic; 
+		value$ = e.Value;	
+	}
+	
+	if (findNoCase(TOPIC_STATE, topic$))
+	{
+		publishState(SOLICITED);
+	}
+
+	else if (findNoCase(TOPIC_POWER, topic$))
+	{
+		processPowerCommand(value$);
+	}
+
+	else if (findNoCase(TOPIC_DIMMER, topic$))
+	{
+		processDimmerCommand(atoi(value$));
+	}
+}
+
+
+eventhandler ErrorOccuredEventHandler(MqttClient client , ErrorOccuredEventArgs e)
+{
+	// not used at this time
+}
+
+
+ /** INITIALIZATION **********************************************************/
+function main()
+{
+	g_initialized = off;
+
+		g_busy = off;
+		g_enabled = off;
+		g_lastLevel = 1;
+
+		waitForInitializationComplete();
+
+		initializeModule();
+
+	g_initialized = on;
+}

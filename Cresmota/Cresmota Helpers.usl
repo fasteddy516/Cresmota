@@ -63,6 +63,8 @@ SOFTWARE.
 #define_constant TOPIC_INFO2        "INFO2"
 #define_constant TOPIC_INFO3        "INFO3"
 #define_constant TOPIC_FANSPEED     "FanSpeed"
+#define_constant TOPIC_BACKLOG      "Backlog"
+#define_constant TOPIC_DIMMER       "Dimmer"
 
 // readability constants - don't mess with these, code depends on them!
 #define_constant QOS_0  0           // mqtt qos level 0
@@ -74,6 +76,8 @@ SOFTWARE.
 #define_constant UNSOLICITED    0
 #define_constant SOLICITED      1
 #define_constant REPEAT         1
+#define_constant RESULT_ONLY    0
+#define_constant FULL_UPDATE    1
 
 #define_constant C_ON       "ON"
 #define_constant C_OFF      "OFF"
