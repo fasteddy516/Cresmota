@@ -47,6 +47,7 @@ SOFTWARE.
 
 // tasmota device io limits
 #define_constant MAX_RELAYS 8
+#define_constant MAX_DIMMERS 8
 
 // mqtt topic constants - we're sticking with tasmota defaults
 #define_constant TOPIC_CMND			"cmnd"
@@ -65,6 +66,7 @@ SOFTWARE.
 #define_constant TOPIC_FANSPEED     "FanSpeed"
 #define_constant TOPIC_BACKLOG      "Backlog"
 #define_constant TOPIC_DIMMER       "Dimmer"
+#define_constant TOPIC_CHANNEL      "Channel"
 
 // readability constants - don't mess with these, code depends on them!
 #define_constant QOS_0  0           // mqtt qos level 0

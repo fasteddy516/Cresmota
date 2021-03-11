@@ -1,6 +1,6 @@
 /** MODULE INFORMATION ********************************************************
 Name........: Cresmota - Dimmer
-Version.....: 20210309
+Version.....: 20210310
 Author......: Edward Wright
 
 
@@ -28,7 +28,7 @@ SOFTWARE.
 
 
 *** REVISION HISTORY **********************************************************
-20210309 - initial release
+20210310 - initial release
 
 
 /** COMPILER DIRECTIVES ******************************************************/
@@ -50,7 +50,7 @@ SOFTWARE.
 // autodiscovery configuration
 #define_constant TUYA_FLAG		"0"	// set to 1 for tuya dimmer 
 #define_constant IFAN_FLAG		"0"	// set to 1 for fan controller
-#define_constant LIGHT_LINK		"1"	// RGB/CT light link state
+#define_constant LIGHT_LINK		"0"	// RGB/CT light link state
 #define_constant LIGHT_SUBTYPE	"1"	// light subtype
 #define_constant SETOPTION_4	"0"	// not supported - leave at 0
 #define_constant SETOPTION_11	"0"	// not supported - leave at 0
@@ -58,7 +58,7 @@ SOFTWARE.
 #define_constant SETOPTION_17	"0"	// not supported - leave at 0
 #define_constant SETOPTION_20	"0"	// not supported - leave at 0
 #define_constant SETOPTION_30	"1"	// set to 1 to enforce discovery of relays as lights
-#define_constant SETOPTION_68	"0"	// not supported - leave at 0
+#define_constant SETOPTION_68	"1"	// set to 1 to enable individual dimmer channel control
 #define_constant SETOPTION_73	"0"	// set to 1 to detach buttons from relays
 #define_constant SETOPTION_82	"0"	// not supported - leave at 0
 #define_constant SETOPTION_114	"0"	// set to 1 to detach switches from relays
@@ -173,14 +173,6 @@ integer_parameter AutoDiscovery;
 
 string_parameter _skip_;
 
-string_parameter LightName[MAX_NAME_LENGTH];
-#begin_parameter_properties LightName
-	propDefaultUnit = unitString;
-	propValidUnits = unitString;
-	propDefaultValue = "Light";
-	propShortDescription = "Friendly Name for light.";
-#end_parameter_properties
-
 integer_parameter Debounce;
 #begin_parameter_properties Debounce
 	propDefaultUnit = unitDecimal;
@@ -199,24 +191,39 @@ integer_parameter RetainLevel;
 	propShortDescription = "Enables retention of the last 'on' value to be recalled when light is turned 'on'.";
 #end_parameter_properties
 
+string_parameter Name[MAX_DIMMERS, MAX_DIMMERS][MAX_NAME_LENGTH];
+#begin_parameter_properties Name
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propDefaultValue = "Light";
+	propShortDescription = "Friendly Name for light/dimmer channel.";
+#end_parameter_properties
+
 
 /** MODULE INPUT/OUTPUT DEFINITIONS ******************************************/
 digital_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, enable, _skip_, _skip_,	_skip_, _skip_
 ;
 digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				_skip_, connect_fb, _skip_,	light_on, light_off, _skip_
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, connect_fb,
+				_skip_,	light_on[MAX_DIMMERS],
+				_skip_, light_off[MAX_DIMMERS, MAX_DIMMERS], _skip_
 ;
-analog_input	light_level_in
+analog_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, 
+				light_level_in[MAX_DIMMERS, MAX_DIMMERS]
 ;
-analog_output	light_level_out
+analog_output	light_level_out[MAX_DIMMERS, MAX_DIMMERS]
 ;
 
 /** GLOBAL VARIABLES *********************************************************/
 integer	g_initialized, g_enabled, g_busy, g_processing, g_changeDetected,
-		g_lastLevel, g_storedLevel;
+		g_numDimmers, g_changed[MAX_DIMMERS], g_lastLevel[MAX_DIMMERS],
+		g_storedLevel[MAX_DIMMERS];
 
 string g_id$[12];
 
@@ -284,6 +291,15 @@ function initializeModule()
 			g_client.UseCertificate(SSLCertificateFile, SSLPrivateKeyFile);
 	}
 
+	for (i = 1 to MAX_DIMMERS)
+	{
+		g_lastLevel[i] = 1;
+		if (CresmotaNameIsValid(Name[i]))
+			g_numDimmers = i;
+		else
+			break;
+	}
+
 	g_client.AddSubscription(CresmotaTopicBuilder(TOPIC_CMND, Topic, "#"), QOS_0);
 	g_client.AddSubscription(CresmotaTopicBuilder(TOPIC_CMND, GroupTopic, "#"), QOS_0);
 	g_client.AddSubscription(CresmotaTopicBuilder(TOPIC_CMND, CresmotaFallbackTopic(CresmotaID), "#"), QOS_0);	
@@ -331,12 +347,18 @@ function publishAutoDiscovery()
 		message$ = message$ + "\x22dn\x22:\x22" + DeviceName + "\x22,";
 	
 		// add friendly names
-		message$ = message$ + "\x22fn\x22:[\x22";
-		if (CresmotaNameIsValid(LightName))
-			message$ = message$ + LightName;
-		else
-			message$ = message$ + "Relay 1";
-		message$ = message$ + "\x22,null,null,null,null,null,null,null],";
+		message$ = message$ + "\x22fn\x22:[";
+		for (i = 1 to MAX_DIMMERS)
+		{
+			if (i <= g_numDimmers)
+				scratch$ = "\x22" + Name[i] + "\x22";
+			else
+				scratch$ = "null";
+			message$ = message$ + scratch$;
+			if (i < MAX_DIMMERS)
+				message$ = message$ + ",";
+		}
+		message$ = message$ + "],";
 
 		// add hostname (just use ClientID - there is no actual hostname for this device)
 		message$ = message$ + "\x22hn\x22:\x22" + ClientID + "\x22,";
@@ -366,8 +388,18 @@ function publishAutoDiscovery()
 		message$ = message$ + "\x22ft\x22:\x22%prefix%/%topic%/\x22,\x22tp\x22:[\x22cmnd\x22,\x22stat\x22,\x22tele\x22],";
 		
 		// add relay types
-		message$ = message$ + "\x22rl\x22:[2,0,0,0,0,0,0,0],";
-		
+		message$ = message$ + "\x22rl\x22:[";
+		for (i = 1 to MAX_DIMMERS)
+		{
+			if (i <= g_numDimmers)
+				message$ = message$ + "2";
+			else
+				message$ = message$ + "0";
+			if (i < MAX_DIMMERS)
+				message$ = message$ + ",";
+		}
+		message$ = message$ + "],";
+
 		// add switch types (no switches for this module)
 		message$ = message$ + "\x22swc\x22:[-1,-1,-1,-1,-1,-1,-1,-1],";
 	    
@@ -436,12 +468,13 @@ function publishState(integer arg_byRequest)
 	// add static values for statistics we don't track
     message$ = message$ + "\x22Uptime\x22:\x220T00:00:00\x22,\x22UptimeSec\x22: 0,\x22Heap\x22:28,\x22SleepMode\x22:\x22Dynamic\x22,\x22Sleep\x22:50,\x22LoadAvg\x22:19,\x22MqttCount\x22:1,";
 
-    // add dimmer on/off state 
-	message$ = message$ + "\x22POWER\x22:\x22" + CresmotaOnOff(ScaleDown(light_level_in)) + "\x22,";
+	// add dimmer on/off states and channel levels 
+	for (i = 1 to g_numDimmers)
+	{
+		message$ = message$ + "\x22POWER" + itoa(i) + "\x22:\x22" + CresmotaOnOff(ScaleDown(light_level_in[i])) + "\x22,";
+		message$ = message$ + "\x22Channel" + itoa(i) + "\x22:" + itoa(ScaleDown(light_level_in[i])) + ",";
+	}
 
-	// add dimmer level
-	message$ = message$ + "\x22Dimmer\x22:" + itoa(ScaleDown(light_level_in)) + ",";
-    
 	// add dimmer fade setting (only 'off' is supported for now)
 	message$ = message$ + "\x22Fade\x22:\x22OFF\x22,";
 
@@ -472,72 +505,91 @@ function publishAvailability(string arg_status)
 }
 
 
-function publishPower(integer arg_level, integer arg_fullUpdate)
+function publishPower(integer arg_i, integer arg_level, integer arg_fullUpdate)
 {
-	string	message$[MAX_MSG_LENGTH];
+	string topic$[MAX_TOPIC_LENGTH], message$[MAX_MSG_LENGTH];
 
+	if (arg_i > g_numDimmers) return;
+	
 	// send 'result'
-	message$ = "{\x22POWER\x22:\x22" + CresmotaOnOff(arg_level) + "\x22,\x22Dimmer\x22:" + itoa(arg_level) + "}";
+	message$ = "{\x22POWER" + itoa(arg_i) + "\x22:\x22" + CresmotaOnOff(arg_level) + "\x22,\x22Channel" + itoa(arg_i) + "\x22:" + itoa(arg_level) + "}";
 	g_client.Publish(CresmotaTopicBuilder(TOPIC_STAT, Topic, TOPIC_RESULT), message$, RETAIN_OFF);
 
 	// send 'power'
 	if (arg_fullUpdate)
-		g_client.Publish(CresmotaTopicBuilder(TOPIC_STAT, Topic, TOPIC_POWER), CresmotaOnOff(arg_level), RETAIN_OFF);
+	{
+		topic$ = CresmotaTopicBuilder(TOPIC_STAT, Topic, TOPIC_POWER) + itoa(arg_i);
+		g_client.Publish(topic$, CresmotaOnOff(arg_level), RETAIN_OFF);
+	}
 }
 
-function powerOn()
+function powerOn(integer arg_i)
 {
-	if (RetainLevel && g_storedLevel)
-		light_level_out = ScaleUp(g_storedLevel);
+	if (arg_i > g_numDimmers) return;
+	
+	if (RetainLevel && g_storedLevel[arg_i])
+		light_level_out[arg_i] = ScaleUp(g_storedLevel[arg_i]);
 	else
-		pulse(1, light_on);
+		pulse(1, light_on[arg_i]);
 }
 
-function powerOff()
+function powerOff(integer arg_i)
 {
 	integer currentLevel;
 
-	currentLevel = ScaleDown(light_level_in);
+	if (arg_i > g_numDimmers) return;
+	
+	currentLevel = ScaleDown(light_level_in[arg_i]);
 	if (currentLevel)
-		g_storedLevel = currentLevel;
-	pulse(1, light_off);
+		g_storedLevel[arg_i] = currentLevel;
+	pulse(1, light_off[arg_i]);
 }
 
-function processPowerCommand(string arg_cmd)
+function processPowerCommand(integer arg_i, string arg_cmd)
 {
+	arg_i = max(1, arg_i);
+
+	if (arg_i > g_numDimmers) return;
+	
 	if (arg_cmd = C_ON)
 	{
-		powerOn();
+		powerOn(arg_i);
 	}
 
 	else if (arg_cmd = C_OFF)
 	{
-		powerOff();		
+		powerOff(arg_i);		
 	}
 
 	else if (arg_cmd = C_TOGGLE)
 	{
-		if (ScaleDown(light_level_in))
-			powerOff();
+		if (ScaleDown(light_level_in[arg_i]))
+			powerOff(arg_i);
 		else
-			powerOn();
+			powerOn(arg_i);
 	}
 
 	else if (arg_cmd = "")
 	{
-		publishPower(ScaleDown(light_level_in), FULL_UPDATE);
+		publishPower(arg_i, ScaleDown(light_level_in[arg_i]), FULL_UPDATE);
 	}
 }
 
-function processDimmerCommand(integer arg_level)
+function processDimmerCommand(integer arg_i, integer arg_level)
 {
-	light_level_out = ScaleUp(arg_level);
+	arg_i = max(1, arg_i);
+	
+	if (arg_i > g_numDimmers) return;
+	
+	light_level_out[arg_i] = ScaleUp(arg_level);
 }
 
 
 /** MODULE EVENTS ************************************************************/
 change enable
 {
+	integer i;
+	
 	if (g_busy) terminateEvent;
 
 	g_busy = on;
@@ -556,7 +608,8 @@ change enable
 				{
 					g_client.Start();
 					
-					g_storedLevel = ScaleDown(light_level_in);					
+					for (i = 1 to g_numDimmers)
+						g_storedLevel[i] = ScaleDown(light_level_in[i]);					
 					
 					g_enabled = on;
 				}
@@ -590,9 +643,10 @@ change enable
 
 change light_level_in
 {
-	integer currentLevel, startLevel;
+	integer i, currentLevel[8], startLevel[8];
 
 	g_changeDetected = on;
+	g_changed[getLastModifiedArrayIndex()] = on;
 	
 	if (g_processing) terminateEvent;
 
@@ -600,7 +654,8 @@ change light_level_in
 	
 	try
 	{
-		startLevel = g_lastLevel;
+		for (i = 1 to g_numDimmers)
+			startLevel[i] = g_lastLevel[i];
 
 		while (g_changeDetected)
 		{
@@ -608,23 +663,33 @@ change light_level_in
 			if (connect_fb)
 			{
 				delay(Debounce); // delay here to allow state to settle before publishing
-				currentLevel = ScaleDown(light_level_in);
-				if (currentLevel <> g_lastLevel)
+				for (i = 1 to g_numDimmers)
 				{
-					if ((g_lastLevel = 0) || (currentLevel = 0))
-						publishPower(currentLevel, FULL_UPDATE);
-					else
-						publishPower(currentLevel, RESULT_ONLY);
-					g_lastLevel = currentLevel;
+					if (!g_changed[i]) continue;
+					
+					g_changed[i] = off;
+					currentLevel[i] = ScaleDown(light_level_in[i]);
+					if (currentLevel[i] <> g_lastLevel[i])
+					{
+						if ((g_lastLevel[i] = 0) || (currentLevel[i] = 0))
+							publishPower(i, currentLevel[i], FULL_UPDATE);
+						else
+							publishPower(i, currentLevel[i], RESULT_ONLY);
+						g_lastLevel[i] = currentLevel[i];
+					}
 				}
 			}
 		}
-		if (g_lastLevel = 0)
-			g_storedLevel = startLevel;
+		
+		for (i = 1 to g_numDimmers)
+		{
+			if (g_lastLevel[i] = 0)
+				g_storedLevel[i] = startLevel[i];
+		}
 	}
 	catch
 	{
-		generateUserWarning("Exception caught in 'fan speed state change' event");
+		generateUserWarning("Exception caught in 'light level in' event");
 	}
 
 	g_processing = off;
@@ -650,7 +715,8 @@ eventhandler ConnectionStateChangedEventHandler(MqttClient client, ConnectionSta
 	{
         publishAvailability(ONLINE);
 		publishInfo();
-		publishPower(ScaleDown(light_level_in), FULL_UPDATE);
+		for (i = 1 to g_numDimmers)
+			publishPower(i, ScaleDown(light_level_in[i]), FULL_UPDATE);
 		publishState(UNSOLICITED);
 		publishAutoDiscovery();
 		if (UPDATE_INTERVAL > 0)
@@ -685,12 +751,12 @@ eventhandler MessageArrivedEventHandler(MqttClient client, MessageReceivedEventA
 
 	else if (findNoCase(TOPIC_POWER, topic$))
 	{
-		processPowerCommand(value$);
+		processPowerCommand(atoi(topic$), value$);
 	}
 
-	else if (findNoCase(TOPIC_DIMMER, topic$))
+	else if (findNoCase(TOPIC_CHANNEL, topic$))
 	{
-		processDimmerCommand(atoi(value$));
+		processDimmerCommand(atoi(topic$), atoi(value$));
 	}
 }
 
@@ -708,7 +774,6 @@ function main()
 
 		g_busy = off;
 		g_enabled = off;
-		g_lastLevel = 1;
 
 		waitForInitializationComplete();
 
