@@ -222,7 +222,6 @@ function initializeModule()
 	
 	g_id$ = CresmotaIDBuilder(CresmotaID);
 
-
 	g_client.Log(LOGGING);
 
 	g_client.Initialize(
@@ -312,10 +311,10 @@ function publishAutoDiscovery()
 		for (i = 1 to MAX_RELAYS)
 		{
 			if (i <= g_numRelays)
-				scratch$ = Name[i];
+				scratch$ = "\x22" + Name[i] + "\x22";
 			else
 				scratch$ = "null";
-			message$ = message$ + "\x22" + scratch$ + "\x22";
+			message$ = message$ + scratch$;
 			if (i < MAX_RELAYS)
 				message$ = message$ + ",";
 		}
