@@ -645,6 +645,7 @@ eventhandler ConnectionStateChangedEventHandler(MqttClient client, ConnectionSta
         publishAvailability(ONLINE);
 		publishInfo();
 		publishPower();
+		publishFanSpeed();
 		publishState(UNSOLICITED);
 		publishAutoDiscovery();
 		if (UPDATE_INTERVAL > 0)
