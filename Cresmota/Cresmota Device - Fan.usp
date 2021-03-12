@@ -1,6 +1,5 @@
 /** MODULE INFORMATION ********************************************************
-Name........: Cresmota - Fan
-Version.....: 20210307
+Name........: Cresmota Device - Fan
 Author......: Edward Wright
 
 
@@ -25,10 +24,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-
-*** REVISION HISTORY **********************************************************
-20210307 - initial release
 
 
 /** COMPILER DIRECTIVES ******************************************************/
@@ -168,7 +163,7 @@ integer_parameter AutoDiscovery;
 	propValidUnits = unitDecimal;
 	propDefaultValue = 1d;
 	propList = {0d, "Disabled"}, {1d, "Enabled"};
-	propShortDescription = "Enable/Disabled Home Assistant Auto Discovery.";
+	propShortDescription = "Enable/Disable Home Assistant Auto Discovery.";
 #end_parameter_properties
 
 string_parameter _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_;
@@ -193,7 +188,7 @@ digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_,
 				connect_fb, _skip_,	
 				fan_off, fan_low, fan_medium, fan_high, _skip_, _skip_,
-				light_toggle, light_on, light_off
+				light_on, light_off
 ;
 
 
@@ -489,7 +484,10 @@ function processPowerCommand(string arg_cmd)
 
 	else if (arg_cmd = C_TOGGLE)
 	{
-		pulse(1, light_toggle);
+		if (light_state)
+			pulse(1, light_off);
+		else
+			pulse(1, light_on);
 	}
 
 	else if (arg_cmd = "")
@@ -590,11 +588,13 @@ change enable
 	g_busy = off;	
 }
 
+
 threadsafe change light_state
 {
 	if (connect_fb)
 		publishPower();
 }
+
 
 push state_off, state_low, state_medium, state_high
 {

@@ -1178,20 +1178,6 @@ Sy1=0
 Mx1=0
 ]
 [
-ObjTp=Bw
-H=1
-Lx=0
-Ly=0
-Rx=1571
-Ry=955
-Xm=-1
-Ym=-1
-SH=37
-Z=75
-Ht=3
-Hi=22
-]
-[
 ObjTp=Sm
 H=1
 SmC=157
@@ -1497,8 +1483,8 @@ PrH=30
 CF=2
 Cmn1=Emulated Devices\\
 mC=8
-C1=21
-C2=22
+C1=22
+C2=21
 C3=23
 C4=24
 C5=25
@@ -1515,7 +1501,7 @@ ObjVer=1
 PrH=31
 CF=2
 n1I=22
-n1O=24
+n1O=23
 mI=22
 I14=38
 I16=41
@@ -1523,16 +1509,15 @@ I17=40
 I18=46
 I19=47
 I22=44
-mO=24
-tO=24
+mO=23
+tO=23
 O14=39
 O16=48
 O17=49
 O18=50
 O19=51
-O22=45
-O23=42
-O24=43
+O22=42
+O23=43
 mP=22
 P1=
 P2=Cresmota Fan
@@ -1560,59 +1545,56 @@ P22=Ceiling Light
 [
 ObjTp=Sm
 H=21
-SmC=13
-Nm=Toggle
+SmC=12
+Nm=Set/Reset Latch
 ObjVer=1
 SmVr=1133
 PrH=19
 CF=2
-n1I=3
-n1O=2
-Cmn1=1\\
-mI=3
-I1=22
-I2=30
-I3=13
-mO=2
-tO=2
-O1=14
-]
-[
-ObjTp=Sm
-H=22
-SmC=13
-Nm=Toggle
-ObjVer=1
-SmVr=1133
-PrH=19
-CF=2
-n1I=3
+n1I=2
 n1O=2
 Cmn1=2\\
-mI=3
+mI=2
 I1=23
 I2=31
-I3=15
 mO=2
 tO=2
 O1=6
 ]
 [
 ObjTp=Sm
-H=23
-SmC=13
-Nm=Toggle
+H=22
+SmC=12
+Nm=Set/Reset Latch
 ObjVer=1
 SmVr=1133
 PrH=19
 CF=2
-n1I=3
+n1I=2
+n1O=2
+Cmn1=1\\
+mI=2
+I1=22
+I2=30
+mO=2
+tO=2
+O1=14
+]
+[
+ObjTp=Sm
+H=23
+SmC=12
+Nm=Set/Reset Latch
+ObjVer=1
+SmVr=1133
+PrH=19
+CF=2
+n1I=2
 n1O=2
 Cmn1=3\\
-mI=3
+mI=2
 I1=24
 I2=32
-I3=16
 mO=2
 tO=2
 O1=7
@@ -1620,19 +1602,18 @@ O1=7
 [
 ObjTp=Sm
 H=24
-SmC=13
-Nm=Toggle
+SmC=12
+Nm=Set/Reset Latch
 ObjVer=1
 SmVr=1133
 PrH=19
 CF=2
-n1I=3
+n1I=2
 n1O=2
 Cmn1=4\\
-mI=3
+mI=2
 I1=25
 I2=33
-I3=17
 mO=2
 tO=2
 O1=8
@@ -1640,19 +1621,18 @@ O1=8
 [
 ObjTp=Sm
 H=25
-SmC=13
-Nm=Toggle
+SmC=12
+Nm=Set/Reset Latch
 ObjVer=1
 SmVr=1133
 PrH=19
 CF=2
-n1I=3
+n1I=2
 n1O=2
 Cmn1=5\\
-mI=3
+mI=2
 I1=26
 I2=34
-I3=18
 mO=2
 tO=2
 O1=9
@@ -1660,19 +1640,18 @@ O1=9
 [
 ObjTp=Sm
 H=26
-SmC=13
-Nm=Toggle
+SmC=12
+Nm=Set/Reset Latch
 ObjVer=1
 SmVr=1133
 PrH=19
 CF=2
-n1I=3
+n1I=2
 n1O=2
 Cmn1=6\\
-mI=3
+mI=2
 I1=27
 I2=35
-I3=19
 mO=2
 tO=2
 O1=10
@@ -1680,19 +1659,18 @@ O1=10
 [
 ObjTp=Sm
 H=27
-SmC=13
-Nm=Toggle
+SmC=12
+Nm=Set/Reset Latch
 ObjVer=1
 SmVr=1133
 PrH=19
 CF=2
-n1I=3
+n1I=2
 n1O=2
 Cmn1=7\\
-mI=3
+mI=2
 I1=28
 I2=36
-I3=20
 mO=2
 tO=2
 O1=11
@@ -1700,19 +1678,18 @@ O1=11
 [
 ObjTp=Sm
 H=28
-SmC=13
-Nm=Toggle
+SmC=12
+Nm=Set/Reset Latch
 ObjVer=1
 SmVr=1133
 PrH=19
 CF=2
-n1I=3
+n1I=2
 n1O=2
 Cmn1=8\\
-mI=3
+mI=2
 I1=29
 I2=37
-I3=21
 mO=2
 tO=2
 O1=12
@@ -1725,46 +1702,38 @@ Nm=Cresmota Device - Relay.usp
 ObjVer=1
 PrH=30
 CF=2
-n1I=24
-n1O=42
-mI=24
-I15=5
-I17=14
-I18=6
-I19=7
-I20=8
-I21=9
-I22=10
-I23=11
-I24=12
-mO=42
-tO=42
-O15=4
-O17=13
-O18=15
-O19=16
-O20=17
-O21=18
-O22=19
-O23=20
-O24=21
-O26=22
-O27=23
-O28=24
-O29=25
-O30=26
-O31=27
-O32=28
-O33=29
-O35=30
-O36=31
-O37=32
-O38=33
-O39=34
-O40=35
-O41=36
-O42=37
-mP=25
+n1I=25
+n1O=43
+mI=25
+I16=5
+I18=14
+I19=6
+I20=7
+I21=8
+I22=9
+I23=10
+I24=11
+I25=12
+mO=43
+tO=43
+O16=4
+O27=22
+O28=23
+O29=24
+O30=25
+O31=26
+O32=27
+O33=28
+O34=29
+O36=30
+O37=31
+O38=32
+O39=33
+O40=34
+O41=35
+O42=36
+O43=37
+mP=26
 P1=
 P2=Cresmota Relay
 P3=1d
@@ -1779,17 +1748,19 @@ P11=x
 P12=cresmota_relay
 P13=tasmotas
 P14=1d
-P15=0d
-P16=
+P15=
+P16=0d
+Plb16=Relays
 P17=
-P18=Relay 1
-P19=Relay 2
-P20=Relay 3
-P21=Relay 4
-P22=Relay 5
-P23=Relay 6
-P24=Relay 7
-P25=Relay 8
+P18=
+P19=Relay 1
+P20=Relay 2
+P21=Relay 3
+P22=Relay 4
+P23=Relay 5
+P24=Relay 6
+P25=Relay 7
+P26=Relay 8
 ]
 [
 ObjTp=Sm
@@ -1846,27 +1817,7 @@ Cmn1=Emulated Devices
 mC=3
 C1=35
 C2=36
-C3=34
-]
-[
-ObjTp=Sm
-H=34
-SmC=13
-Nm=Toggle
-ObjVer=1
-SmVr=1133
-PrH=33
-CF=2
-n1I=3
-n1O=2
-Cmn1=light\\
-mI=3
-I1=42
-I2=43
-I3=45
-mO=2
-tO=2
-O1=44
+C3=72
 ]
 [
 ObjTp=Sm
@@ -1919,47 +1870,47 @@ Nm=Cresmota Device - Dimmer.usp
 ObjVer=1
 PrH=32
 CF=2
-n1I=29
+n1I=21
 n2I=23
-n1O=44
-mI=52
-I25=52
-I45=85
-I46=86
-I47=87
-I48=88
-I49=89
-I50=90
-I51=91
-I52=92
-mO=52
-tO=52
-O25=53
-O27=55
-O28=56
-O29=63
-O30=64
-O31=65
-O32=66
-O33=67
-O34=68
-O36=69
-O37=70
-O38=71
-O39=72
-O40=73
-O41=74
-O42=75
-O43=76
-O45=77
-O46=78
-O47=79
-O48=80
-O49=81
-O50=82
-O51=83
-O52=84
-mP=25
+n1O=36
+mI=44
+I17=59
+I37=85
+I38=86
+I39=87
+I40=88
+I41=89
+I42=90
+I43=91
+I44=92
+mO=44
+tO=44
+O17=52
+O19=55
+O20=56
+O21=63
+O22=64
+O23=65
+O24=66
+O25=67
+O26=68
+O28=69
+O29=70
+O30=71
+O31=72
+O32=73
+O33=74
+O34=75
+O35=76
+O37=77
+O38=78
+O39=79
+O40=80
+O41=81
+O42=82
+O43=83
+O44=84
+mP=45
 P1=
 P2=Cresmota Dimmer
 P3=3d
@@ -1977,14 +1928,34 @@ P14=1d
 P15=
 P16=50d
 P17=1d
-P18=Dimmer 1
-P19=Dimmer 2
-P20=Dimmer 3
-P21=Dimmer 4
-P22=Dimmer 5
-P23=Dimmer 6
-P24=Dimmer 7
-P25=Dimmer 8
+P18=
+P19=
+P20=
+P21=
+P22=
+P23=
+P24=
+P25=
+P26=
+P27=
+P28=
+P29=
+P30=
+P31=
+P32=
+P33=
+P34=
+P35=
+P36=
+P37=
+P38=Dimmer 1
+P39=Dimmer 2
+P40=Dimmer 3
+P41=Dimmer 4
+P42=Dimmer 5
+P43=Dimmer 6
+P44=Dimmer 7
+P45=Dimmer 8
 ]
 [
 ObjTp=Sm
@@ -2643,6 +2614,25 @@ P1=60%
 P2=0%
 ]
 [
+ObjTp=Sm
+H=72
+SmC=12
+Nm=Set/Reset Latch
+ObjVer=1
+SmVr=1133
+PrH=33
+CF=2
+n1I=2
+n1O=2
+Cmn1=light\\
+mI=2
+I1=42
+I2=43
+mO=2
+tO=2
+O1=44
+]
+[
 ObjTp=Sg
 H=4
 Nm=relay_connect_fb
@@ -2650,7 +2640,7 @@ Nm=relay_connect_fb
 [
 ObjTp=Sg
 H=5
-Nm=relay_enable
+Nm=enable_relay
 ]
 [
 ObjTp=Sg
@@ -2689,48 +2679,8 @@ Nm=relay_8_fb
 ]
 [
 ObjTp=Sg
-H=13
-Nm=relay_1_toggle_go
-]
-[
-ObjTp=Sg
 H=14
 Nm=relay_1_fb
-]
-[
-ObjTp=Sg
-H=15
-Nm=relay_2_toggle_go
-]
-[
-ObjTp=Sg
-H=16
-Nm=relay_3_toggle_go
-]
-[
-ObjTp=Sg
-H=17
-Nm=relay_4_toggle_go
-]
-[
-ObjTp=Sg
-H=18
-Nm=relay_5_toggle_go
-]
-[
-ObjTp=Sg
-H=19
-Nm=relay_6_toggle_go
-]
-[
-ObjTp=Sg
-H=20
-Nm=relay_7_toggle_go
-]
-[
-ObjTp=Sg
-H=21
-Nm=relay_8_toggle_go
 ]
 [
 ObjTp=Sg
@@ -2849,11 +2799,6 @@ Nm=light_state_fb
 ]
 [
 ObjTp=Sg
-H=45
-Nm=light_toggle_go
-]
-[
-ObjTp=Sg
 H=46
 Nm=fan_medium_fb
 ]
@@ -2885,11 +2830,6 @@ Nm=fan_high_go
 [
 ObjTp=Sg
 H=52
-Nm=dimmer_enable
-]
-[
-ObjTp=Sg
-H=53
 Nm=dimmer_connect_fb
 ]
 [
@@ -2919,6 +2859,11 @@ Nm=dimmer_4_level_update_go
 ]
 [
 ObjTp=Sg
+H=59
+Nm=dimmer_enable
+]
+[
+ObjTp=Sg
 H=60
 Nm=dimmer_1_level_update_go
 ]
@@ -2931,6 +2876,7 @@ Nm=dimmer_5_level_update_go
 ObjTp=Sg
 H=62
 Nm=//__digital_reserved__
+SgTp=31
 ]
 [
 ObjTp=Sg

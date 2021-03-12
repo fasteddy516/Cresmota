@@ -108,12 +108,10 @@
   OutputSigType20=Digital
   OutputCue21=[~UNUSED~]
   OutputSigType21=Digital
-  OutputCue22=light_toggle
+  OutputCue22=light_on
   OutputSigType22=Digital
-  OutputCue23=light_on
+  OutputCue23=light_off
   OutputSigType23=Digital
-  OutputCue24=light_off
-  OutputSigType24=Digital
   ParamCue1=[Reference Name]
   ParamCue2=DeviceName
   ParamSigType2=String
@@ -161,8 +159,8 @@
   MaxVariableInputs=22
   MinVariableInputsList2=0
   MaxVariableInputsList2=0
-  MinVariableOutputs=24
-  MaxVariableOutputs=24
+  MinVariableOutputs=23
+  MaxVariableOutputs=23
   MinVariableOutputsList2=0
   MaxVariableOutputsList2=0
   MinVariableParams=21
@@ -359,7 +357,7 @@
   ObjTp=Dp
   H=14
   Tp=1
-  SD=Enable/Disabled Home Assistant Auto Discovery.
+  SD=Enable/Disable Home Assistant Auto Discovery.
   HD=True
   DV=1d
   Sgn=0

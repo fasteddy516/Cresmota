@@ -1,6 +1,5 @@
 /** MODULE INFORMATION ********************************************************
-Name........: Cresmota - Dimmer
-Version.....: 20210310
+Name........: Cresmota Device - Dimmer
 Author......: Edward Wright
 
 
@@ -25,10 +24,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-
-*** REVISION HISTORY **********************************************************
-20210310 - initial release
 
 
 /** COMPILER DIRECTIVES ******************************************************/
@@ -191,6 +186,10 @@ integer_parameter RetainLevel;
 	propShortDescription = "Enables retention of the last 'on' value to be recalled when light is turned 'on'.";
 #end_parameter_properties
 
+string_parameter _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				 _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				 _skip_, _skip_, _skip_, _skip_;
+
 string_parameter Name[MAX_DIMMERS, MAX_DIMMERS][MAX_NAME_LENGTH];
 #begin_parameter_properties Name
 	propDefaultUnit = unitString;
@@ -202,12 +201,10 @@ string_parameter Name[MAX_DIMMERS, MAX_DIMMERS][MAX_NAME_LENGTH];
 
 /** MODULE INPUT/OUTPUT DEFINITIONS ******************************************/
 digital_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, enable, _skip_, _skip_,	_skip_, _skip_
 ;
 digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, connect_fb,
 				_skip_,	light_on[MAX_DIMMERS],
@@ -244,6 +241,7 @@ integer_function ScaleDown(integer arg_level)
 		return((arg_level * 10000) / 6553500);
 }
 
+
 integer_function ScaleUp(integer arg_level)
 {
 	// converts from (0-100) to (0-65535)
@@ -255,6 +253,7 @@ integer_function ScaleUp(integer arg_level)
 	else
 		return(((arg_level + 1) * 65535) / 100);
 }
+
 
 function initializeModule()
 {
@@ -523,6 +522,7 @@ function publishPower(integer arg_i, integer arg_level, integer arg_fullUpdate)
 	}
 }
 
+
 function powerOn(integer arg_i)
 {
 	if (arg_i > g_numDimmers) return;
@@ -532,6 +532,7 @@ function powerOn(integer arg_i)
 	else
 		pulse(1, light_on[arg_i]);
 }
+
 
 function powerOff(integer arg_i)
 {
@@ -544,6 +545,7 @@ function powerOff(integer arg_i)
 		g_storedLevel[arg_i] = currentLevel;
 	pulse(1, light_off[arg_i]);
 }
+
 
 function processPowerCommand(integer arg_i, string arg_cmd)
 {
@@ -574,6 +576,7 @@ function processPowerCommand(integer arg_i, string arg_cmd)
 		publishPower(arg_i, ScaleDown(light_level_in[arg_i]), FULL_UPDATE);
 	}
 }
+
 
 function processDimmerCommand(integer arg_i, integer arg_level)
 {

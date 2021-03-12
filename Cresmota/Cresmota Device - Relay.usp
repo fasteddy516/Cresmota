@@ -1,6 +1,5 @@
 /** MODULE INFORMATION ********************************************************
-Name........: Cresmota - Relays
-Version.....: 20210306
+Name........: Cresmota Device - Relays
 Author......: Edward Wright
 
 
@@ -25,10 +24,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-
-*** REVISION HISTORY **********************************************************
-20210306 - initial release
 
 
 /** COMPILER DIRECTIVES ******************************************************/
@@ -168,8 +163,10 @@ integer_parameter AutoDiscovery;
 	propValidUnits = unitDecimal;
 	propDefaultValue = 1d;
 	propList = {0d, "Disabled"}, {1d, "Enabled"};
-	propShortDescription = "Enable/Disabled Home Assistant Auto Discovery.";
+	propShortDescription = "Enable/Disable Home Assistant Auto Discovery.";
 #end_parameter_properties
+
+string_parameter _skip_;
 
 integer_parameter ReportAs;
 #begin_parameter_properties ReportAs
@@ -193,13 +190,13 @@ string_parameter Name[MAX_RELAYS, MAX_RELAYS][MAX_NAME_LENGTH];
 
 /** MODULE INPUT/OUTPUT DEFINITIONS ******************************************/
 digital_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				enable, _skip_, state[MAX_RELAYS, MAX_RELAYS]
 ;
 digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				connect_fb, _skip_,
-				toggle[MAX_RELAYS], _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				connect_fb, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_,
 				turn_on[MAX_RELAYS], _skip_,
 				turn_off[MAX_RELAYS, MAX_RELAYS]
 ;
@@ -270,7 +267,6 @@ function publishInfo()
 	string message$[BUFFER_SIZE];
 
 	// INFO1
-	
 	makeString(message$, "{\x22Module\x22:\x22%s\x22,\x22Version\x22:\x22%s\x22,\x22FallbackTopic\x22:\x22%s\x22,\x22GroupTopic\x22:\x22%s\x22}",
 		MODULE_NAME,
 		MODULE_VERSION,
@@ -495,7 +491,10 @@ function processPowerCommand(integer arg_i, string arg_cmd)
 
 	else if (arg_cmd = C_TOGGLE)
 	{
-		pulse(1, toggle[arg_i]);
+		if (state[arg_i])
+			pulse(1, turn_off[arg_i]);
+		else
+			pulse(1, turn_on[arg_i]);
 	}
 
 	else if (arg_cmd = "")
@@ -554,6 +553,7 @@ change enable
 
 	g_busy = off;	
 }
+
 
 threadsafe change state
 {

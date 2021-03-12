@@ -1,6 +1,5 @@
 /** MODULE INFORMATION ********************************************************
 Name........: Cresmota Helper Library
-Version.....: 20210307
 Author......: Edward Wright
 
 
@@ -27,11 +26,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-*** REVISION HISTORY **********************************************************
-20210307 - initial release
-
-
 *** CONSTANT DEFINITIONS *****************************************************/
+#define_constant HELPER_VERSION "0.1.0"
+
 // behaviour constants
 #define_constant CLEAN_SESSION      1    // mqtt clean session on connect (0=false, 1=true) 
 #define_constant UPDATE_INTERVAL    300  // interval (in seconds) between automatic status updates
@@ -113,6 +110,7 @@ string_function CresmotaFallbackTopic(integer arg_id)
     makeString(fallback_topic$, "DVES_%s%02X_fb", right(ID_PREFIX, 4), arg_id);
     return(fallback_topic$);
 }
+
 
 integer_function CresmotaNameIsValid(string arg_name)
 {
