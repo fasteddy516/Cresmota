@@ -398,6 +398,7 @@ function publishAutoDiscovery()
 		// autodiscovery sensors message----------
 		makeString(message$, "{\x22sn\x22:{\x22Time\x22:\x22%s\x22},\x22ver\x22:1}", CresmotaTimeStamp());
 		g_client.Publish(CresmotaTopicBuilder(TOPIC_DISCOVERY, g_id$, TOPIC_SENSORS), message$, RETAIN_ON);
+		delay(AUTODISC_DELAY);
 	}
 	else // if autodiscovery is disabled, just make sure any previously retained topic is cleared
 	{
@@ -583,11 +584,11 @@ eventhandler ConnectionStateChangedEventHandler(MqttClient client, ConnectionSta
 	if (connect_fb)
 	{
         publishAvailability(ONLINE);
+		publishAutoDiscovery();
 		publishInfo();
 		for (i = 1 to g_numRelays)
 			publishPower(i);
 		publishState(UNSOLICITED);
-		publishAutoDiscovery();
 		if (UPDATE_INTERVAL > 0)
 		{
 			g_updateTimer.Initialize(UPDATE_INTERVAL);

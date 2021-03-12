@@ -32,6 +32,7 @@ SOFTWARE.
 // behaviour constants
 #define_constant CLEAN_SESSION      1    // mqtt clean session on connect (0=false, 1=true) 
 #define_constant UPDATE_INTERVAL    300  // interval (in seconds) between automatic status updates
+#define_constant AUTODISC_DELAY     150  // amount of time to pause after publishing autodiscovery messages
 
 // cresmota-id prefix used in mock mac addresses
 #define_constant ID_PREFIX "0E107F0000" // using a 'locally administered' address space
