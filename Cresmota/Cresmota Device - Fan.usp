@@ -243,7 +243,6 @@ function initializeModule()
 	);
 
 	RegisterEvent (g_client, MessageArrived, MessageArrivedEventHandler);
-	RegisterEvent (g_client, ErrorOccured, ErrorOccuredEventHandler);
 	RegisterEvent (g_client, ConnectionStateChanged, ConnectionStateChangedEventHandler);
 	RegisterDelegate (g_updateTimer, PeriodicTimerCallback, UpdateEvent);
 	
@@ -676,13 +675,7 @@ eventhandler MessageArrivedEventHandler(MqttClient client, MessageReceivedEventA
 }
 
 
-eventhandler ErrorOccuredEventHandler(MqttClient client , ErrorOccuredEventArgs e)
-{
-	// not used at this time
-}
-
-
- /** INITIALIZATION **********************************************************/
+/** INITIALIZATION **********************************************************/
 function main()
 {
 	g_initialized = off;
