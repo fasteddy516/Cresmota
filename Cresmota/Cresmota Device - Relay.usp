@@ -479,12 +479,12 @@ function processPowerCommand(integer arg_i, string arg_cmd)
 	
 	if (arg_i > MAX_RELAYS) return;
 
-	if (arg_cmd = C_ON)
+	if (arg_cmd = C_ON && (!state[arg_i]))
 	{
 		pulse(1, turn_on[arg_i]);
 	}
 
-	else if (arg_cmd = C_OFF)
+	else if (arg_cmd = C_OFF && state[arg_i])
 	{
 		pulse(1, turn_off[arg_i]);
 	}
@@ -497,7 +497,7 @@ function processPowerCommand(integer arg_i, string arg_cmd)
 			pulse(1, turn_on[arg_i]);
 	}
 
-	else if (arg_cmd = "")
+	else
 	{
 		publishPower(arg_i);
 	}

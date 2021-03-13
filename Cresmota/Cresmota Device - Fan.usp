@@ -472,12 +472,12 @@ function processPowerCommand(string arg_cmd)
 {
 	if (!g_lightEnabled) return;
 	
-	if (arg_cmd = C_ON)
+	if ((arg_cmd = C_ON) && (!light_state))
 	{
 		pulse(1, light_on);
 	}
 
-	else if (arg_cmd = C_OFF)
+	else if ((arg_cmd = C_OFF) && light_state)
 	{
 		pulse(1, light_off);
 	}
@@ -490,7 +490,7 @@ function processPowerCommand(string arg_cmd)
 			pulse(1, light_on);
 	}
 
-	else if (arg_cmd = "")
+	else
 	{
 		publishPower();
 	}

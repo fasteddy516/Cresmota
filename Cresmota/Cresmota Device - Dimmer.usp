@@ -549,42 +549,53 @@ function powerOff(integer arg_i)
 
 function processPowerCommand(integer arg_i, string arg_cmd)
 {
+	integer currentLevel;
+
 	arg_i = max(1, arg_i);
 
 	if (arg_i > g_numDimmers) return;
+
+	currentLevel = ScaleDown(light_level_in[arg_i]);
 	
-	if (arg_cmd = C_ON)
+	if ((arg_cmd = C_ON) && (!currentLevel))
 	{
 		powerOn(arg_i);
 	}
 
-	else if (arg_cmd = C_OFF)
+	else if ((arg_cmd = C_OFF) && currentLevel)
 	{
 		powerOff(arg_i);		
 	}
 
 	else if (arg_cmd = C_TOGGLE)
 	{
-		if (ScaleDown(light_level_in[arg_i]))
+		if (currentLevel)
 			powerOff(arg_i);
 		else
 			powerOn(arg_i);
 	}
 
-	else if (arg_cmd = "")
+	else
 	{
-		publishPower(arg_i, ScaleDown(light_level_in[arg_i]), FULL_UPDATE);
+		publishPower(arg_i, currentLevel, FULL_UPDATE);
 	}
 }
 
 
 function processDimmerCommand(integer arg_i, integer arg_level)
 {
+	integer newLevel;
+
 	arg_i = max(1, arg_i);
 	
 	if (arg_i > g_numDimmers) return;
 	
-	light_level_out[arg_i] = ScaleUp(arg_level);
+	newLevel = ScaleUp(arg_level);
+	if (light_level_out[arg_i] <> newLevel)
+		light_level_out[arg_i] = newLevel;
+	else
+		publishPower(arg_i, arg_level, FULL_UPDATE);
+
 }
 
 
