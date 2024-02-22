@@ -18,7 +18,7 @@
   Exclusions_CDS=5,6
   Inclusions_CDS=7
   Name=Cresmota Device
-  SmplCName=Cresmota.usp
+  SmplCName=Cresmota-Device.usp
   Code=1
   SysRev5=3.090
   SMWRev=3.00.00
@@ -63,9 +63,9 @@
   SmplCOutputCue1=i#
   SmplCInputList2Cue1=an#
   SmplCOutputList2Cue1=ai#
-  SPlus2CompiledName=S2_Cresmota
+  SPlus2CompiledName=S2_Cresmota_Device
   SymJam=NonExclusive
-  FileName=Cresmota.ush
+  FileName=Cresmota-Device.ush
   SIMPLPlusModuleEncoding=0
   clz1=Cresmota
 [END]
