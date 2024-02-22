@@ -1,0 +1,115 @@
+/** MODULE INFORMATION ********************************************************
+Name........: Cresmota Device
+Author......: Edward Wright
+
+
+*** MIT LICENSE ***************************************************************
+
+Copyright (c) 2024 Edward Wright
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+/** COMPILER DIRECTIVES ******************************************************/
+#symbol_name "Cresmota Device"
+#category "46" "Cresmota"
+#default_volatile
+#enable_stack_checking
+#user_simplsharp_library "Cresmota"
+
+
+/** CONSTANT DEFINITIONS *****************************************************/
+
+
+/** PARAMETER DEFINITIONS ****************************************************/ 
+
+
+/** I/O DEFINITIONS **********************************************************/
+digital_input	enable, debug;
+
+digital_output	enable_fb, debug_fb;
+
+
+/** GLOBAL VARIABLE DEFINITIONS **********************************************/
+integer	g_initialized;
+
+CresmotaDevice g_cresmota;
+
+
+/** HELPER FUNCTIONS *********************************************************/
+
+
+/** MODULE EVENTS ************************************************************/
+push enable
+{
+	if (g_initialized)
+	{
+		g_cresmota.Start();
+		enable_fb = on;
+	}
+}
+
+release enable
+{
+	if (g_initialized)
+	{
+		enable_fb = off;
+		g_cresmota.Stop();
+	}
+}
+
+push debug
+{
+	if (g_initialized)
+	{
+		g_cresmota.StartDebugging();
+	}
+}
+
+release debug
+{
+	if (g_initialized)
+	{
+		g_cresmota.StopDebugging();
+	}
+}
+
+
+/** SIMPL# CALLBACK FUNCTIONS ************************************************/
+callback function UpdateDebugStatus(integer value)
+{
+	debug_fb = (value > 0);
+}
+
+
+/** MODULE INITIALIZATION ****************************************************/
+function main()
+{
+	g_initialized = off;
+
+	debug_fb = off;
+
+	RegisterDelegate(g_cresmota, DebugStatusDelegate, UpdateDebugStatus);
+
+	WaitForInitializationComplete();
+
+	if (debug) g_cresmota.StartDebugging();
+
+	g_initialized = on;
+}
