@@ -81,19 +81,19 @@ namespace Cresmota
 
                     managedMqttClient.ApplicationMessageReceivedAsync += e =>
                     {
-                        Console.WriteLine($"Received application message {e.ApplicationMessage.Topic} = {e.ApplicationMessage.ConvertPayloadToString()}.");
+                        DebugPrint($"Received application message {e.ApplicationMessage.Topic} = {e.ApplicationMessage.ConvertPayloadToString()}.");
                         return Task.CompletedTask;
                     };
 
                     managedMqttClient.ConnectedAsync += e =>
                     {
-                        Console.WriteLine("The managed MQTT client is CONNECTED.");
+                        DebugPrint("The managed MQTT client is CONNECTED.");
                         return Task.CompletedTask;
                     };
 
                     managedMqttClient.DisconnectedAsync += e =>
                     {
-                        Console.WriteLine("The managed MQTT client is DISCONNECTED.");
+                        DebugPrint("The managed MQTT client is DISCONNECTED.");
                         return Task.CompletedTask;
                     };
 
@@ -101,7 +101,7 @@ namespace Cresmota
                         .WithAutoReconnectDelay(TimeSpan.FromSeconds(5))
                         .WithClientOptions(new MqttClientOptionsBuilder()
                             .WithClientId("Client1")
-                            .WithTcpServer("127.0.0.1")
+                            .WithTcpServer("172.22.3.137")
                             //.WithCredentials("username", "password")
                             .WithCleanSession()
                             .Build())
@@ -117,13 +117,13 @@ namespace Cresmota
                     {
                         if (managedMqttClient.IsConnected)
                         {
-                            Console.WriteLine($"Published testValue={testValue}");
+                            DebugPrint($"Published testValue={testValue}");
                             testValue++;
                             await managedMqttClient.EnqueueAsync("TestTopic", testValue.ToString());
                         }
                         else
                         {
-                            Console.WriteLine("Waiting for connection...");
+                            DebugPrint("Waiting for connection...");
                         }
                         Thread.Sleep(2500);
                     }
