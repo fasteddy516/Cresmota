@@ -1,11 +1,11 @@
 # AutoDiscovery Protocol
 
-For reference purposes, the following are examples of autodiscovery messages published by an Adafruit Huzzah running Tasmota 9.3.0 in various configurations.  The JSON has been expanded to a more easily readable format (actual discovery messages don't include the line breaks and spaces), and some fields (MAC, IP, SSID, etc.) have been masked for privacy reasons. The Huzzah was configured with `MQTT Topic` set to `huzzah_1`.
+For reference purposes, the following are examples of autodiscovery messages published by an M5Stack Atom Echo running Tasmota 13.4.0(tasmota32) in various configurations.  The JSON has been expanded to a more easily readable format (actual discovery messages don't include the line breaks and spaces), and some fields (MAC, IP, SSID, etc.) have been masked for privacy reasons. The Atom Echo was configured with `MQTT Topic` set to `atom_echo`.
 
 ## Single Relay with Toggle
 
 **Tasmota Template:**  
-`{"NAME":"Huzzah","GPIO":[17,0,56,0,255,255,0,0,255,255,255,255,255],"FLAG":0,"BASE":18}`
+`{"NAME":"M5Stack Atom Echo","GPIO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,224,0,0,0,1,1,0,0,0,0,0,1,0,0,0,0,0,0,32],"FLAG":0,"BASE":1}`
 
 **Autodiscovery:**  
 Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=True`
@@ -15,16 +15,16 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=True`
     "ip": "x.x.x.x",                                                // IP Address
     "dn": "Tasmota",                                                // Device Name 
     "fn": ["Tasmota", null, null, null, null, null, null, null],    // Friendly Names
-    "hn": "tasmota-huzzah",                                         // Host Name
+    "hn": "tasmota-atom-echo",                                      // Host Name
     "mac": "xxxxxxxxxxxx",                                          // Full MAC as Device ID
-    "md": "Huzzah",                                                 // Module or Template Name
+    "md": "M5Stack Atom Echo",                                      // Module or Template Name
     "ty": 0,                                                        // Flag for TuyaMCU devices (Module = 54-Tuya MCU or 57-SK03 Outdoor)
     "if": 0,                                                        // Flag for Ifan devices (Module = 44-Sonoff iFan02 or 71-Sonoff iFan03)
     "ofln": "Offline",                                              // Payload Offline
     "onln": "Online",                                               // Payload Online
     "state": ["OFF", "ON", "TOGGLE", "HOLD"],                       // State Text
-    "sw": "9.3.0",                                                  // Software Version
-    "t": "huzzah_1",                                                // Topic
+    "sw": "13.4.0",                                                 // Software Version
+    "t": "atom-echo",                                               // Topic
     "ft": "%prefix%/%topic%/",                                      // Full Topic
     "tp": ["cmnd", "stat", "tele"],                                 // Topic Prefixes
     "rl": [1, 0, 0, 0, 0, 0, 0, 0],                                 // Relays (3=Shutter, 2=Light, 1=Basic, 0=None)
@@ -44,9 +44,12 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=True`
         "114": 0,   // (Switch) Detach Switches from relays and enable MQTT action state for all the SwitchModes (1)
         "117": 0    // (Light) run fading at fixed duration instead of fixed slew rate
     },
-    "lk": 1,                                                        // light RGB/CT link (1=true, 0=false) 
-    "lt_st": 0,                                                     // light subtype (0=None, 1=Single, 2=ColdWarm, 3=RGB, 4=RGBW, 5=RGBCW)
-    "sho": [0, 0, 0, 0],                                            // Shutter Options (Bit0=invert, Bit1=locked, Bit2=End stop time enabled, Bit3=webButtons Inverted)
+    "lk": 1,                                                        // Light RGB/CT link (1=true, 0=false) 
+    "lt_st": 0,                                                     // Light subtype (0=None, 1=Single, 2=ColdWarm, 3=RGB, 4=RGBW, 5=RGBCW)
+    "bat": 0,                                                       // Running on battery (0=no, 1=yes)
+    "dslp": 0,                                                      // Deepsleep Capable (0=no, 1=yes)
+    "sho": [],                                                      // Shutter Options (Bit0=invert, Bit1=locked, Bit2=End stop time enabled, Bit3=webButtons Inverted)
+    "sht": [],                                                      // Shutter Tilt Options ([tilt_min, tilt_max, duration] per shutter)
     "ver": 1                                                        // Discovery Version
 }
 ```
@@ -56,6 +59,67 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
 {
     "sn": {
         "Time":"2021-02-23T18:44:24"
+    },
+    "ver": 1
+}
+```
+
+## Single Channel Dimmer
+
+**Tasmota Template:**  
+`{"NAME":"M5Stack Atom Echo","GPIO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,416,0,0,0,1,1,0,0,0,0,0,1,0,0,0,0,0,0,32],"FLAG":0,"BASE":1}`
+
+**Autodiscovery:**  
+Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=true`
+```jsonc
+{
+    "ip": "x.x.x.x",
+    "dn": "Tasmota",
+    "fn": ["Tasmota", null, null, null, null, null, null, null],
+    "hn": "tasmota-atom-echo",
+    "mac": "xxxxxxxxxxxx",
+    "md": "M5Stack Atom Echo",
+    "ty": 0,
+    "if": 0,
+    "ofln": "Offline",
+    "onln": "Online",
+    "state": ["OFF", "ON", "TOGGLE", "HOLD"],
+    "sw": "13.4.0",
+    "t": "atom_echo",
+    "ft": "%prefix%/%topic%/",
+    "tp": ["cmnd", "stat", "tele"],
+    "rl": [2, 0, 0, 0, 0, 0, 0, 0],
+    "swc": [-1, -1, -1, -1, -1, -1, -1, -1],
+    "swn": [null, null, null, null, null, null, null, null],
+    "btn": [0, 0, 0, 0, 0, 0, 0, 0],
+    "so": {
+        "4": 0,
+        "11": 0,
+        "13": 0,
+        "17": 0,
+        "20": 0,
+        "30": 1,
+        "68": 0,
+        "73": 0,
+        "82": 0,
+        "114": 0,
+        "117": 0
+    },
+    "lk": 1,
+    "lt_st": 1,
+    "bat": 0,
+    "dslp": 0,
+    "sho": [],
+    "sht": [],
+    "ver": 1
+}
+```
+
+Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
+```jsonc
+{
+    "sn": {
+        "Time": "2021-03-07T23:07:39"
     },
     "ver": 1
 }
@@ -82,7 +146,7 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=true`
     "ofln": "Offline",
     "onln": "Online",
     "state": ["OFF", "ON", "TOGGLE", "HOLD"],
-    "sw": "9.3.0",
+    "sw": "13.4.0",
     "t": "huzzah_1",
     "ft": "%prefix%/%topic%/",
     "tp": ["cmnd", "stat", "tele"],
@@ -105,7 +169,10 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=true`
     },
     "lk": 1,
     "lt_st": 0,
+    "bat": 0,
+    "dslp": 0,
     "sho": [0, 0, 0, 0],
+    "sht": [],
     "ver": 1
 }
 ```
@@ -115,64 +182,6 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
 {
     "sn": {
         "Time":"2021-02-23T18:44:24"
-    },
-    "ver": 1
-}
-```
-
-## Single Channel Dimmer
-
-**Tasmota Template:**  
-`{"NAME":"Huzzah","GPIO":[34,0,33,0,576,322,0,0,321,416,320,96,256,0],"FLAG":0,"BASE":73}`
-
-**Autodiscovery:**  
-Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=true`
-```jsonc
-{
-    "ip": "x.x.x.x",
-    "dn": "Huzzah 1",
-    "fn": ["Relay 1", null, null, null, null, null, null, null],
-    "hn": "tasmota-huzzah",
-    "mac": "xxxxxxxxxxxx",
-    "md": "Huzzah",
-    "ty": 0,
-    "if": 0,
-    "ofln": "Offline",
-    "onln": "Online",
-    "state": ["OFF", "ON", "TOGGLE", "HOLD"],
-    "sw": "9.3.0",
-    "t": "huzzah_1",
-    "ft": "%prefix%/%topic%/",
-    "tp": ["cmnd", "stat", "tele"],
-    "rl": [2, 0, 0, 0, 0, 0, 0, 0],
-    "swc": [-1, -1, -1, -1, -1, -1, -1, -1],
-    "swn": [null, null, null, null, null, null, null, null],
-    "btn": [0, 0, 0, 0, 0, 0, 0, 0],
-    "so": {
-        "4": 0,
-        "11": 0,
-        "13": 0,
-        "17": 0,
-        "20": 0,
-        "30": 1,
-        "68": 0,
-        "73": 0,
-        "82": 0,
-        "114": 0,
-        "117": 0
-    },
-    "lk": 1,
-    "lt_st": 1,
-    "sho": [0, 0, 0, 0],
-    "ver": 1
-}
-```
-
-Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
-```jsonc
-{
-    "sn": {
-        "Time": "2021-03-07T23:07:39"
     },
     "ver": 1
 }
