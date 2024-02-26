@@ -1,11 +1,11 @@
 # AutoDiscovery Protocol
 
-For reference purposes, the following are examples of autodiscovery messages published by an M5Stack Atom Echo running Tasmota 13.4.0(tasmota32) in various configurations.  The JSON has been expanded to a more easily readable format (actual discovery messages don't include the line breaks and spaces), and some fields (MAC, IP, SSID, etc.) have been masked for privacy reasons. The Atom Echo was configured with `MQTT Topic` set to `atom_echo`.
+For reference purposes, the following are examples of autodiscovery messages published by a Wemos D1 Mini running Tasmota 13.4.0 in various configurations.  The JSON has been expanded to a more easily readable format (actual discovery messages don't include the line breaks and spaces), and some fields (MAC, IP, SSID, etc.) have been masked for privacy reasons. The device was configured with `MQTT Topic` set to `wemos-mini-d1`.
 
 ## Single Relay with Toggle
 
 **Tasmota Template:**  
-`{"NAME":"M5Stack Atom Echo","GPIO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,224,0,0,0,1,1,0,0,0,0,0,1,0,0,0,0,0,0,32],"FLAG":0,"BASE":1}`
+`{"NAME":"Wemos Mini D1","GPIO":[224,1,1,1,1,1,1,1,1,1,1,1,1,1],"FLAG":0,"BASE":18}`
 
 **Autodiscovery:**  
 Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=True`
@@ -15,22 +15,22 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=True`
     "ip": "x.x.x.x",                                                // IP Address
     "dn": "Tasmota",                                                // Device Name 
     "fn": ["Tasmota", null, null, null, null, null, null, null],    // Friendly Names
-    "hn": "tasmota-atom-echo",                                      // Host Name
+    "hn": "tasmota-wemos-mini-d1",                                  // Host Name
     "mac": "xxxxxxxxxxxx",                                          // Full MAC as Device ID
-    "md": "M5Stack Atom Echo",                                      // Module or Template Name
+    "md": "Wemos Mini D1",                                          // Module or Template Name
     "ty": 0,                                                        // Flag for TuyaMCU devices (Module = 54-Tuya MCU or 57-SK03 Outdoor)
     "if": 0,                                                        // Flag for Ifan devices (Module = 44-Sonoff iFan02 or 71-Sonoff iFan03)
     "ofln": "Offline",                                              // Payload Offline
     "onln": "Online",                                               // Payload Online
     "state": ["OFF", "ON", "TOGGLE", "HOLD"],                       // State Text
     "sw": "13.4.0",                                                 // Software Version
-    "t": "atom-echo",                                               // Topic
+    "t": "wemos-mini-d1",                                           // Topic
     "ft": "%prefix%/%topic%/",                                      // Full Topic
     "tp": ["cmnd", "stat", "tele"],                                 // Topic Prefixes
-    "rl": [1, 0, 0, 0, 0, 0, 0, 0],                                 // Relays (3=Shutter, 2=Light, 1=Basic, 0=None)
-    "swc": [-1, -1, -1, -1, -1, -1, -1, -1],                        // Switches (-1=None, 0=Toggle, 1=Follow, 2=-Follow, 3=Pushbutton, 4=-Pushbutton, 5=PB_Hold, 6=-PB_Hold, 7=PB_Toggle, 8=Toggle_Multi, 9=Follow_Multi, 10=-Follow_Multi, 11=Pushhold_Multi, 12=-Pushhold_Multi, 13=Push_On, 14=-Push_On, 15=Push_Ignore) (Tied to SetOption114)
-    "swn": [null, null, null, null, null, null, null, null],        // Switch Name? (Return of GetSwitchText(i).c_str()) (Tied to SetOption114)
-    "btn": [0, 0, 0, 0, 0, 0, 0, 0],                                // Button (0=Disable, 1=Enable) (Tied to SetOption73)
+    "rl": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  // Relays (3=Shutter, 2=Light, 1=Basic, 0=None)
+    "swc": [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],  // Switches (-1=None, 0=Toggle, 1=Follow, 2=-Follow, 3=Pushbutton, 4=-Pushbutton, 5=PB_Hold, 6=-PB_Hold, 7=PB_Toggle, 8=Toggle_Multi, 9=Follow_Multi, 10=-Follow_Multi, 11=Pushhold_Multi, 12=-Pushhold_Multi, 13=Push_On, 14=-Push_On, 15=Push_Ignore) (Tied to SetOption114)
+    "swn": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],  // Switch Name? (Return of GetSwitchText(i).c_str()) (Tied to SetOption114)
+    "btn": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  // Button (0=Disable, 1=Enable) (Tied to SetOption73)
     "so": {                                                         // SetOptions
         "4": 0,     // (MQTT) Switch between RESULT (0) or COMMAND (1)
         "11": 0,    // (Button) Swap (1) button single and double press functionality
@@ -44,7 +44,7 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=True`
         "114": 0,   // (Switch) Detach Switches from relays and enable MQTT action state for all the SwitchModes (1)
         "117": 0    // (Light) run fading at fixed duration instead of fixed slew rate
     },
-    "lk": 1,                                                        // Light RGB/CT link (1=true, 0=false) 
+    "lk": 0,                                                        // Light RGB/CT link (1=true, 0=false) 
     "lt_st": 0,                                                     // Light subtype (0=None, 1=Single, 2=ColdWarm, 3=RGB, 4=RGBW, 5=RGBCW)
     "bat": 0,                                                       // Running on battery (0=no, 1=yes)
     "dslp": 0,                                                      // Deepsleep Capable (0=no, 1=yes)
@@ -67,7 +67,7 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
 ## Single Channel Dimmer
 
 **Tasmota Template:**  
-`{"NAME":"M5Stack Atom Echo","GPIO":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,416,0,0,0,1,1,0,0,0,0,0,1,0,0,0,0,0,0,32],"FLAG":0,"BASE":1}`
+`{"NAME":"Wemos Mini D1","GPIO":[416,1,1,1,1,1,1,1,1,1,1,1,1,1],"FLAG":0,"BASE":18}`
 
 **Autodiscovery:**  
 Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=true`
@@ -76,22 +76,22 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=true`
     "ip": "x.x.x.x",
     "dn": "Tasmota",
     "fn": ["Tasmota", null, null, null, null, null, null, null],
-    "hn": "tasmota-atom-echo",
+    "hn": "tasmota-wemos-mini-d1",
     "mac": "xxxxxxxxxxxx",
-    "md": "M5Stack Atom Echo",
+    "md": "Wemos Mini D1",
     "ty": 0,
     "if": 0,
     "ofln": "Offline",
     "onln": "Online",
     "state": ["OFF", "ON", "TOGGLE", "HOLD"],
     "sw": "13.4.0",
-    "t": "atom_echo",
+    "t": "wemos-mini-d1",
     "ft": "%prefix%/%topic%/",
     "tp": ["cmnd", "stat", "tele"],
-    "rl": [2, 0, 0, 0, 0, 0, 0, 0],
-    "swc": [-1, -1, -1, -1, -1, -1, -1, -1],
-    "swn": [null, null, null, null, null, null, null, null],
-    "btn": [0, 0, 0, 0, 0, 0, 0, 0],
+    "rl": [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "swc": [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+    "swn": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+    "btn": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     "so": {
         "4": 0,
         "11": 0,
@@ -128,7 +128,7 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/sensors`, `retain=True`
 ## iFan03 Fan & Light Controller
 
 **Tasmota Template:**  
-`{"NAME":"Huzzah","GPIO":[32,0,320,0,3200,3232,0,0,512,256,225,226,227,0],"FLAG":0,"BASE":71}`
+`{"NAME":"Wemos Mini D1","GPIO":[32,3200,0,3232,0,0,256,512,226,320,225,227,0,0],"FLAG":0,"BASE":71}`
 
 **Autodiscovery:**  
 Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=true`
@@ -136,24 +136,24 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=true`
 ```jsonc
 {
     "ip": "x.x.x.x",
-    "dn": "Huzzah 1",
-    "fn": ["Relay 1", "Tasmota2", "Tasmota3", "Tasmota4", null, null, null, null],
-    "hn": "tasmota-huzzah",
+    "dn": "Tasmota",
+    "fn": ["Tasmota", "Tasmota2", "Tasmota3", "Tasmota4", null, null, null, null],
+    "hn": "tasmota-wemos-mini-d1",
     "mac": "xxxxxxxxxxxx",
-    "md": "Huzzah",
+    "md": "Wemos Mini D1",
     "ty": 0,
     "if": 1,
     "ofln": "Offline",
     "onln": "Online",
     "state": ["OFF", "ON", "TOGGLE", "HOLD"],
     "sw": "13.4.0",
-    "t": "huzzah_1",
+    "t": "wemos-mini-d1",
     "ft": "%prefix%/%topic%/",
     "tp": ["cmnd", "stat", "tele"],
-    "rl": [2, 0, 0, 0, 0, 0, 0, 0],
-    "swc": [-1, -1, -1, -1, -1, -1, -1, -1],
-    "swn": [null, null, null, null, null, null, null, null],
-    "btn": [0, 0, 0, 0, 0, 0, 0, 0],
+    "rl": [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "swc": [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+    "swn": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+    "btn": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     "so": {
         "4": 0,
         "11": 0,
@@ -167,11 +167,11 @@ Topic: `tasmota/discovery/xxxxxxxxxxxx/config`, `retain=true`
         "114": 0,
         "117": 0
     },
-    "lk": 1,
+    "lk": 0,
     "lt_st": 0,
     "bat": 0,
     "dslp": 0,
-    "sho": [0, 0, 0, 0],
+    "sho": [],
     "sht": [],
     "ver": 1
 }
