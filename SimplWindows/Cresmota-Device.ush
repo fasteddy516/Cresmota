@@ -20,27 +20,63 @@
   Name=Cresmota Device
   SmplCName=Cresmota-Device.usp
   Code=1
-  SysRev5=3.090
+  SysRev5=4.000
   SMWRev=3.00.00
-  InputCue1=enable
+  InputCue1=[~UNUSED~]
   InputSigType1=Digital
-  InputCue2=debug
+  InputCue2=[~UNUSED~]
   InputSigType2=Digital
-  OutputCue1=enable_fb
+  InputCue3=[~UNUSED~]
+  InputSigType3=Digital
+  InputCue4=[~UNUSED~]
+  InputSigType4=Digital
+  InputCue5=[~UNUSED~]
+  InputSigType5=Digital
+  InputCue6=[~UNUSED~]
+  InputSigType6=Digital
+  InputCue7=enable
+  InputSigType7=Digital
+  InputCue8=debug
+  InputSigType8=Digital
+  OutputCue1=[~UNUSED~]
   OutputSigType1=Digital
-  OutputCue2=debug_fb
+  OutputCue2=[~UNUSED~]
   OutputSigType2=Digital
+  OutputCue3=[~UNUSED~]
+  OutputSigType3=Digital
+  OutputCue4=[~UNUSED~]
+  OutputSigType4=Digital
+  OutputCue5=[~UNUSED~]
+  OutputSigType5=Digital
+  OutputCue6=[~UNUSED~]
+  OutputSigType6=Digital
+  OutputCue7=enable_fb
+  OutputSigType7=Digital
+  OutputCue8=debug_fb
+  OutputSigType8=Digital
   ParamCue1=[Reference Name]
-  MinVariableInputs=2
-  MaxVariableInputs=2
+  ParamCue2=ID
+  ParamSigType2=Constant
+  ParamCue3=DeviceName
+  ParamSigType3=String
+  ParamCue4=Broker
+  ParamSigType4=String
+  ParamCue5=Port
+  ParamSigType5=Constant
+  ParamCue6=Username
+  ParamSigType6=String
+  ParamCue7=Password
+  ParamSigType7=String
+  MinVariableInputs=8
+  MaxVariableInputs=8
   MinVariableInputsList2=0
   MaxVariableInputsList2=0
-  MinVariableOutputs=2
-  MaxVariableOutputs=2
+  MinVariableOutputs=8
+  MaxVariableOutputs=8
   MinVariableOutputsList2=0
   MaxVariableOutputsList2=0
-  MinVariableParams=0
-  MaxVariableParams=0
+  MinVariableParams=6
+  MaxVariableParams=6
   Expand=expand_separately
   Expand2=expand_separately
   ProgramTree=Logic
@@ -56,7 +92,13 @@
   CompilerParamCode5=14
   NumFixedParams=1
   Pp1=1
-  MPp=1
+  Pp2=2
+  Pp3=3
+  Pp4=4
+  Pp5=5
+  Pp6=6
+  Pp7=7
+  MPp=7
   NVStorage=10
   ParamSigType1=String
   SmplCInputCue1=o#
@@ -74,4 +116,80 @@
   H=1
   Tp=1
   NoS=False
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=2
+  Tp=1
+  SD=Module ID - must be unique for each Cresmota module within a program slot.
+  HD=True
+  DV=1d
+  Sgn=0
+  Lng=False
+  NF=1
+  NoS=True
+  DNF=1
+  VVS=1
+  LR=1d
+  HR=99d
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=3
+  Tp=1
+  SD=Name of the Cresmota device.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=4
+  Tp=1
+  SD=MQTT Broker IP address or hostname.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=5
+  Tp=1
+  SD=MQTT Broker port.
+  HD=True
+  DV=1883d
+  Sgn=0
+  Lng=False
+  NF=1
+  NoS=True
+  DNF=1
+  VVS=1
+  LR=1d
+  HR=65535d
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=6
+  Tp=1
+  SD=MQTT Broker username.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=7
+  Tp=1
+  SD=MQTT Broker password.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+ObjTp=Status
+HeaderCompatible=False
 [END]

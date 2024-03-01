@@ -11,11 +11,11 @@ namespace Cresmota
 
         public static bool RunningOnCrestron { get; private set; } = false;
 
-        private static Action<string> DebugOutput = null;
+        private Action<string> DebugOutput = null;
 
-        private static bool _debug = false;
+        private bool _debug = false;
 
-        public static bool Debug
+        public bool Debug
         {
             get
             {
@@ -50,10 +50,10 @@ namespace Cresmota
             }
         }
 
-        private static void DebugPrint(string msg)
+        private void DebugPrint(string msg)
         {
             if (Debug)
-                DebugOutput($"(CRESMOTA-S#) {msg}");
+                DebugOutput($"(CRESMOTA-{ProgramSlot:D2}:{ID:D2}-S#) {msg}");
         }
 
         public void StartDebugging()

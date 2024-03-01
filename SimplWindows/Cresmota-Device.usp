@@ -38,13 +38,58 @@ SOFTWARE.
 
 
 /** PARAMETER DEFINITIONS ****************************************************/ 
+integer_parameter ID;
+#begin_parameter_properties ID
+	propValidUnits = unitDecimal;
+	propBounds = 1d, 99d;
+	propDefaultValue = 1d;
+	propShortDescription = "Module ID - must be unique for each Cresmota module within a program slot.";
+#end_parameter_properties
+
+string_parameter DeviceName[150];
+#begin_parameter_properties DeviceName
+	propValidUnits = unitString;
+	propDefaultValue = "";
+	propShortDescription = "Name of the Cresmota device.";
+#end_parameter_properties
+
+string_parameter Broker[50];
+#begin_parameter_properties Broker
+	propValidUnits = unitString;
+	propDefaultValue = "";
+	propShortDescription = "MQTT Broker IP address or hostname.";
+#end_parameter_properties
+	
+integer_parameter Port;
+#begin_parameter_properties Port
+	propValidUnits = unitDecimal;
+	propBounds = 1d, 65535d;
+	propDefaultValue = 1883d;
+	propShortDescription = "MQTT Broker port.";
+#end_parameter_properties
+
+string_parameter Username[50];
+#begin_parameter_properties Username
+	propValidUnits = unitString;
+	propDefaultValue = "";
+	propShortDescription = "MQTT Broker username.";
+#end_parameter_properties
+
+string_parameter Password[50];
+#begin_parameter_properties Password
+	propValidUnits = unitString;
+	propDefaultValue = "";
+	propShortDescription = "MQTT Broker password.";
+#end_parameter_properties
 
 
 /** I/O DEFINITIONS **********************************************************/
-digital_input	enable, debug;
-
-digital_output	enable_fb, debug_fb;
-
+digital_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				enable, debug
+;
+digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				enable_fb, debug_fb
+;
 
 /** GLOBAL VARIABLE DEFINITIONS **********************************************/
 integer	g_initialized;
@@ -108,6 +153,17 @@ function main()
 	RegisterDelegate(g_cresmota, DebugStatusDelegate, UpdateDebugStatus);
 
 	WaitForInitializationComplete();
+
+	g_cresmota.ID = ID;
+	
+	print("DeviceName :: S+ [%s]   S# [%s]\n", DeviceName, g_cresmota.DeviceName);
+	g_cresmota.DeviceName = DeviceName;
+	print("DeviceName :: S+ [%s]   S# [%s]\n", DeviceName, g_cresmota.DeviceName);
+	g_cresmota.ProgramSlot = GetProgramNumber();
+	g_cresmota.BrokerAddress = Broker;
+	g_cresmota.BrokerPort = Port;
+	g_cresmota.Username = Username;
+	g_cresmota.Password = Password;
 
 	if (debug) g_cresmota.StartDebugging();
 
