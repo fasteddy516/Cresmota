@@ -21,10 +21,15 @@ namespace Cresmota
             return (value == SPlusBool.FALSE);
         }
 
-        public static ushort Convert(ushort value)
+        public static ushort FromBool(bool value)
         {
-            return (value > SPlusBool.FALSE) ? SPlusBool.TRUE : SPlusBool.FALSE;
+            return (value) ? SPlusBool.TRUE : SPlusBool.FALSE;
         }
+        
+        public static bool ToBool(ushort value)
+        {
+            return (value > SPlusBool.FALSE) ? true : false;
+        }    
     }
 
     public class TasmotaConfig
@@ -132,7 +137,7 @@ namespace Cresmota
             }
         }
 
-        public string ToJson()
+        public override string ToString()
         {
             return JsonConvert.SerializeObject(this);
         }
@@ -149,7 +154,7 @@ namespace Cresmota
         [JsonProperty("ver", Order = 2)]
         public const string Version = "1";
 
-        public string ToJson()
+        public override string ToString()
         {
             return JsonConvert.SerializeObject(this);
         }

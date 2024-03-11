@@ -35,11 +35,14 @@ SOFTWARE.
 
 
 /** CONSTANT DEFINITIONS *****************************************************/
+#define_constant MAX_CHANNELS 8
+#define_constant MAX_NAME_LENGTH 50
 
 
 /** PARAMETER DEFINITIONS ****************************************************/ 
 integer_parameter ID;
 #begin_parameter_properties ID
+	propDefaultUnit = unitDecimal;
 	propValidUnits = unitDecimal;
 	propBounds = 1d, 99d;
 	propDefaultValue = 1d;
@@ -48,6 +51,7 @@ integer_parameter ID;
 
 string_parameter DeviceName[150];
 #begin_parameter_properties DeviceName
+	propDefaultUnit = unitString;
 	propValidUnits = unitString;
 	propDefaultValue = "";
 	propShortDescription = "Name of the Cresmota device.";
@@ -55,6 +59,7 @@ string_parameter DeviceName[150];
 
 string_parameter Broker[50];
 #begin_parameter_properties Broker
+	propDefaultUnit = unitString;
 	propValidUnits = unitString;
 	propDefaultValue = "";
 	propShortDescription = "MQTT Broker IP address or hostname.";
@@ -62,6 +67,7 @@ string_parameter Broker[50];
 	
 integer_parameter Port;
 #begin_parameter_properties Port
+	propDefaultUnit = unitDecimal;
 	propValidUnits = unitDecimal;
 	propBounds = 1d, 65535d;
 	propDefaultValue = 1883d;
@@ -70,6 +76,7 @@ integer_parameter Port;
 
 string_parameter Username[50];
 #begin_parameter_properties Username
+	propDefaultUnit	= unitString;
 	propValidUnits = unitString;
 	propDefaultValue = "";
 	propShortDescription = "MQTT Broker username.";
@@ -77,17 +84,46 @@ string_parameter Username[50];
 
 string_parameter Password[50];
 #begin_parameter_properties Password
+	propDefaultUnit = unitString;
 	propValidUnits = unitString;
 	propDefaultValue = "";
 	propShortDescription = "MQTT Broker password.";
 #end_parameter_properties
 
+integer_parameter AutoDiscovery;
+#begin_parameter_properties AutoDiscovery
+	propDefaultUnit = unitDecimal;
+	propValidUnits = unitDecimal;
+	propDefaultValue = 1d;
+	propList = {0d, "Disabled"},{1d, "Enabled"};
+	propShortDescription = "Enable or disable Tasmota auto-discovery for Home Assistant.";
+#end_parameter_properties
+
+integer_parameter ReportAs;
+#begin_parameter_properties ReportAs
+	propDefaultUnit = unitDecimal;
+	propValidUnits = unitDecimal;
+	propDefaultValue = 0d;
+	propList = {0d, "Relay(s)"},{1d, "Light(s)"};
+	propShortDescription = "Report as relay(s) or light(s) to Home Assistant.";
+#end_parameter_properties
+
+string_parameter Name[MAX_CHANNELS, MAX_CHANNELS][MAX_NAME_LENGTH];
+#begin_parameter_properties Name
+	propDefaultUnit = unitString;
+	propValidUnits = unitString;
+	propDefaultValue = "";
+	propShortDescription = "Friendly name for individual relay/light channels.";
+#end_parameter_properties
+
 
 /** I/O DEFINITIONS **********************************************************/
-digital_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+digital_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				enable, debug
 ;
-digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				enable_fb, debug_fb
 ;
 
@@ -98,6 +134,22 @@ CresmotaDevice g_cresmota;
 
 
 /** HELPER FUNCTIONS *********************************************************/
+function InitializeChannels()
+{
+	integer i;
+
+	for (i = 1 to MAX_CHANNELS)
+	{
+		if (Name[i] != "")
+		{
+			g_cresmota.Add(Name[i]);
+		}
+		else
+		{
+			break;
+		}
+	}
+}
 
 
 /** MODULE EVENTS ************************************************************/
@@ -154,18 +206,19 @@ function main()
 
 	WaitForInitializationComplete();
 
-	g_cresmota.ID = ID;
-	
-	print("DeviceName :: S+ [%s]   S# [%s]\n", DeviceName, g_cresmota.DeviceName);
-	g_cresmota.DeviceName = DeviceName;
-	print("DeviceName :: S+ [%s]   S# [%s]\n", DeviceName, g_cresmota.DeviceName);
+	if (debug) g_cresmota.StartDebugging();
+
 	g_cresmota.ProgramSlot = GetProgramNumber();
+	g_cresmota.ID = ID;
+	g_cresmota.DeviceName = DeviceName;
 	g_cresmota.BrokerAddress = Broker;
 	g_cresmota.BrokerPort = Port;
 	g_cresmota.Username = Username;
 	g_cresmota.Password = Password;
+	g_cresmota.AutoDiscovery = AutoDiscovery;
+	g_cresmota.ReportAs = ReportAs;
 
-	if (debug) g_cresmota.StartDebugging();
+	InitializeChannels();
 
 	g_initialized = on;
 }

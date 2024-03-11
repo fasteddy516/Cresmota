@@ -13,6 +13,10 @@ namespace Cresmota
     public partial class CresmotaDevice : IDisposable
     {
         public const ushort MaxProgramSlots = 10;
+        public const ushort MaxChannels = 8;
+
+        public TasmotaConfig Config = new TasmotaConfig();
+        public TasmotaSensors Sensors { get; private set; } = new TasmotaSensors();
 
         private ushort _programSlot = 0;
         public ushort ProgramSlot
@@ -82,19 +86,66 @@ namespace Cresmota
             get { return new SimplSharpString(Config.Topic); }
             set { Config.Topic = value.ToString(); }
         }
-        public SimplSharpString DeviceName
+        public string DeviceName
         {
-            get { return new SimplSharpString(Config.DeviceName); }
-            set { Config.DeviceName = value.ToString(); DebugPrint($"@ Set DeviceName to {value.ToString()}");  }
+            get
+            {
+                return Config.DeviceName;
+            }
+            set
+            {
+                Config.DeviceName = value;
+                DebugPrint($"@ Set DeviceName to {value}");
+            }
         }
 
-        //AutoDiscovery
-        //Report as relays or lights?
-        //Friendly Names
+        public ushort ChannelCount { get; private set; } = 0;
 
+        private bool _autoDiscovery = true;
+        public ushort AutoDiscovery
+        {
+            get
+            {
+                return SPlusBool.FromBool(_autoDiscovery);
+            }
+            set
+            {
+                if (SPlusBool.IsTrue(value))
+                {
+                    _autoDiscovery = true;
+                    DebugPrint("@ AutoDiscovery is ENABLED");
+                }
+                else
+                {
+                    _autoDiscovery = false;
+                    DebugPrint("@ AutoDiscovery is DISABLED");
+                }
+            }
+        }
 
-        public TasmotaConfig Config = new TasmotaConfig();
-        public TasmotaSensors Sensors { get; private set; } = new TasmotaSensors();
+        private bool _reportAsLights = false;
+        public ushort ReportAs
+        {
+            get
+            {
+                return SPlusBool.FromBool(_reportAsLights);
+            }
+            set
+            {
+                if (SPlusBool.IsTrue(value))
+                {
+                    _reportAsLights = true;
+                    Config.SetOption["30"] = 1;
+                    DebugPrint("@ Reporting as LIGHTS");
+                }
+                else
+                {
+                    _reportAsLights = false;
+                    Config.SetOption["30"] = 0;
+                    DebugPrint("@ Reporting as RELAYS");
+                }
+            }
+        }
 
         private Task ClientTask { get; set; }
         private bool stopRequested = false;
@@ -227,6 +278,19 @@ namespace Cresmota
             DebugPrint("- DISPOSE complete");
         }
 
+        public void Add(SimplSharpString name)
+        {
+            if (ChannelCount >= MaxChannels)
+            {
+                DebugPrint($"! Cannot add {name} - ChannelCount is at maximum ({MaxChannels})");
+                return;
+            }
+            Config.FriendlyName[ChannelCount] = name.ToString();
+            Config.Relay[ChannelCount] = 1;
+            ChannelCount++;
+            DebugPrint($"> Channel [{ChannelCount:D2}] = {name}");
+        }
+        
         private async Task Client()
         {
             DebugPrint("+ CLIENT task started");
@@ -245,10 +309,11 @@ namespace Cresmota
                         return Task.CompletedTask;
                     };
 
-                    managedMqttClient.ConnectedAsync += e =>
+                    managedMqttClient.ConnectedAsync += async e =>
                     {
                         DebugPrint("The managed MQTT client is CONNECTED.");
-                        return Task.CompletedTask;
+                        await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.MACAddress}/config", Config.ToString());
+                        await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.MACAddress}/sensors", Sensors.ToString());
                     };
 
                     managedMqttClient.DisconnectedAsync += e =>

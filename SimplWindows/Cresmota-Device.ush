@@ -34,10 +34,30 @@
   InputSigType5=Digital
   InputCue6=[~UNUSED~]
   InputSigType6=Digital
-  InputCue7=enable
+  InputCue7=[~UNUSED~]
   InputSigType7=Digital
-  InputCue8=debug
+  InputCue8=[~UNUSED~]
   InputSigType8=Digital
+  InputCue9=[~UNUSED~]
+  InputSigType9=Digital
+  InputCue10=[~UNUSED~]
+  InputSigType10=Digital
+  InputCue11=[~UNUSED~]
+  InputSigType11=Digital
+  InputCue12=[~UNUSED~]
+  InputSigType12=Digital
+  InputCue13=[~UNUSED~]
+  InputSigType13=Digital
+  InputCue14=[~UNUSED~]
+  InputSigType14=Digital
+  InputCue15=[~UNUSED~]
+  InputSigType15=Digital
+  InputCue16=[~UNUSED~]
+  InputSigType16=Digital
+  InputCue17=enable
+  InputSigType17=Digital
+  InputCue18=debug
+  InputSigType18=Digital
   OutputCue1=[~UNUSED~]
   OutputSigType1=Digital
   OutputCue2=[~UNUSED~]
@@ -50,10 +70,30 @@
   OutputSigType5=Digital
   OutputCue6=[~UNUSED~]
   OutputSigType6=Digital
-  OutputCue7=enable_fb
+  OutputCue7=[~UNUSED~]
   OutputSigType7=Digital
-  OutputCue8=debug_fb
+  OutputCue8=[~UNUSED~]
   OutputSigType8=Digital
+  OutputCue9=[~UNUSED~]
+  OutputSigType9=Digital
+  OutputCue10=[~UNUSED~]
+  OutputSigType10=Digital
+  OutputCue11=[~UNUSED~]
+  OutputSigType11=Digital
+  OutputCue12=[~UNUSED~]
+  OutputSigType12=Digital
+  OutputCue13=[~UNUSED~]
+  OutputSigType13=Digital
+  OutputCue14=[~UNUSED~]
+  OutputSigType14=Digital
+  OutputCue15=[~UNUSED~]
+  OutputSigType15=Digital
+  OutputCue16=[~UNUSED~]
+  OutputSigType16=Digital
+  OutputCue17=enable_fb
+  OutputSigType17=Digital
+  OutputCue18=debug_fb
+  OutputSigType18=Digital
   ParamCue1=[Reference Name]
   ParamCue2=ID
   ParamSigType2=Constant
@@ -67,16 +107,36 @@
   ParamSigType6=String
   ParamCue7=Password
   ParamSigType7=String
-  MinVariableInputs=8
-  MaxVariableInputs=8
+  ParamCue8=AutoDiscovery,0d,1d
+  ParamSigType8=List
+  ParamCue9=ReportAs,0d,1d
+  ParamSigType9=List
+  ParamCue10=Name[1]
+  ParamSigType10=String
+  ParamCue11=Name[2]
+  ParamSigType11=String
+  ParamCue12=Name[3]
+  ParamSigType12=String
+  ParamCue13=Name[4]
+  ParamSigType13=String
+  ParamCue14=Name[5]
+  ParamSigType14=String
+  ParamCue15=Name[6]
+  ParamSigType15=String
+  ParamCue16=Name[7]
+  ParamSigType16=String
+  ParamCue17=Name[8]
+  ParamSigType17=String
+  MinVariableInputs=18
+  MaxVariableInputs=18
   MinVariableInputsList2=0
   MaxVariableInputsList2=0
-  MinVariableOutputs=8
-  MaxVariableOutputs=8
+  MinVariableOutputs=18
+  MaxVariableOutputs=18
   MinVariableOutputsList2=0
   MaxVariableOutputsList2=0
-  MinVariableParams=6
-  MaxVariableParams=6
+  MinVariableParams=16
+  MaxVariableParams=16
   Expand=expand_separately
   Expand2=expand_separately
   ProgramTree=Logic
@@ -98,7 +158,17 @@
   Pp5=5
   Pp6=6
   Pp7=7
-  MPp=7
+  Pp8=8
+  Pp9=9
+  Pp10=10
+  Pp11=11
+  Pp12=12
+  Pp13=13
+  Pp14=14
+  Pp15=15
+  Pp16=16
+  Pp17=17
+  MPp=17
   NVStorage=10
   ParamSigType1=String
   SmplCInputCue1=o#
@@ -190,6 +260,120 @@
   VVS=0
 [END]
 [BEGIN]
-ObjTp=Status
-HeaderCompatible=False
+  ObjTp=Dp
+  H=8
+  Tp=1
+  SD=Enable or disable Tasmota auto-discovery for Home Assistant.
+  HD=True
+  DV=1d
+  Sgn=0
+  Lng=False
+  NF=1
+  NoS=True
+  DNF=1
+  VVS=2
+  VN=2
+  Val1=0d
+  Lbl1=Disabled
+  Val2=1d
+  Lbl2=Enabled
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=9
+  Tp=1
+  SD=Report as relay(s) or light(s) to Home Assistant.
+  HD=True
+  DV=0d
+  Sgn=0
+  Lng=False
+  NF=1
+  NoS=True
+  DNF=1
+  VVS=2
+  VN=2
+  Val1=0d
+  Lbl1=Relay(s)
+  Val2=1d
+  Lbl2=Light(s)
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=10
+  Tp=1
+  SD=Friendly name for individual relay/light channels.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=11
+  Tp=1
+  SD=Friendly name for individual relay/light channels.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=12
+  Tp=1
+  SD=Friendly name for individual relay/light channels.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=13
+  Tp=1
+  SD=Friendly name for individual relay/light channels.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=14
+  Tp=1
+  SD=Friendly name for individual relay/light channels.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=15
+  Tp=1
+  SD=Friendly name for individual relay/light channels.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=16
+  Tp=1
+  SD=Friendly name for individual relay/light channels.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
+[END]
+[BEGIN]
+  ObjTp=Dp
+  H=17
+  Tp=1
+  SD=Friendly name for individual relay/light channels.
+  HD=True
+  DV=
+  NoS=False
+  VVS=0
 [END]
