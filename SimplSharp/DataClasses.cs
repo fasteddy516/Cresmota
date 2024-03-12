@@ -126,7 +126,7 @@ namespace Cresmota
         public List<int> ShutterTilt = new List<int>();
 
         [JsonProperty("ver", Order = 27)]
-        public string Version = "1";
+        public const int Version = 1;
 
         public TasmotaConfig()
         {
@@ -152,7 +152,7 @@ namespace Cresmota
         };
 
         [JsonProperty("ver", Order = 2)]
-        public const string Version = "1";
+        public const int Version = 1;
 
         public override string ToString()
         {

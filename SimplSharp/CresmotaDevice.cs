@@ -311,9 +311,26 @@ namespace Cresmota
 
                     managedMqttClient.ConnectedAsync += async e =>
                     {
-                        DebugPrint("The managed MQTT client is CONNECTED.");
-                        await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.MACAddress}/config", Config.ToString());
-                        await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.MACAddress}/sensors", Sensors.ToString());
+                        DebugPrint($"+ Connected to broker @ {BrokerAddress}:{BrokerPort}");
+                        if (_autoDiscovery)
+                        {
+
+                            DebugPrint("+ Autodiscovery ENABLED");
+                            DebugPrint($"  > Publishing to tasmota/discovery/{Config.MACAddress}");
+                            await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.MACAddress}/config", Config.ToString(), retain: true);
+                            await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.MACAddress}/sensors", Sensors.ToString(), retain: true);
+                        }
+                        else
+                        {
+                            DebugPrint("- Autodiscovery DISABLED");
+                            DebugPrint($"  > Clearing any retained topics at tasmota/discovery/{Config.MACAddress}");
+                            await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.Topic}/config", "", retain: true);
+                            await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.Topic}/config", "", retain: false);
+                            await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.Topic}/sensors", "", retain: true);
+                            await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.Topic}/sensors", "", retain: false);
+                        }
+                        DebugPrint("* Publishing ONLINE state");
+                        await managedMqttClient.EnqueueAsync($"tele/{Config.Topic}/LWT", Config.OnlinePayload, retain: true);
                     };
 
                     managedMqttClient.DisconnectedAsync += e =>
@@ -329,6 +346,9 @@ namespace Cresmota
                             .WithTcpServer(BrokerAddress.ToString(), BrokerPort)
                             .WithCredentials(Username.ToString(), Password.ToString())
                             .WithCleanSession()
+                            .WithWillTopic($"tele/{Config.Topic}/LWT")
+                            .WithWillPayload(Config.OfflinePayload)
+                            .WithWillRetain(true)
                             .Build())
                         .Build();
 
