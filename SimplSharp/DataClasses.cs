@@ -41,7 +41,7 @@ namespace Cresmota
         public string DeviceName = "";
         
         [JsonProperty("fn", Order = 3)]
-        public string[] FriendlyName = new string[8];
+        public string[] FriendlyName = new string[32];
 
         [JsonProperty("hn", Order = 4)]
         public string HostName = "";

@@ -22,7 +22,18 @@ namespace DesktopTestApplication
             cresmota.ProgramSlot = 1;
             cresmota.ID = 1;
             cresmota.DeviceName = "TestDevice";
-            cresmota.BrokerAddress = "127.0.0.1";
+            cresmota.BrokerAddress = "mqttbroker";
+            cresmota.Username = "mqttuser";
+            cresmota.Password = "mqttpassword";
+
+            for (int i = 0; i < CresmotaDevice.MaxChannels; i++)
+            {
+                cresmota.Add($"Relay {i + 1}", mode: 2);
+            }
+
+            cresmota.Config.SetOption["30"] = 1;
+            cresmota.Config.SetOption["68"] = 1;
+            cresmota.Config.LightSubtype = 1;
 
             cresmota.Start();
             Thread.Sleep(30000);

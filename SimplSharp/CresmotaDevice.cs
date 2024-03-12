@@ -13,7 +13,7 @@ namespace Cresmota
     public partial class CresmotaDevice : IDisposable
     {
         public const ushort MaxProgramSlots = 10;
-        public const ushort MaxChannels = 8;
+        public const ushort MaxChannels = 32;
 
         public TasmotaConfig Config = new TasmotaConfig();
         public TasmotaSensors Sensors { get; private set; } = new TasmotaSensors();
@@ -274,11 +274,11 @@ namespace Cresmota
 
             Stop();
             DebugStatusDelegate = null;
-
+             
             DebugPrint("- DISPOSE complete");
         }
 
-        public void Add(SimplSharpString name)
+        public void Add(SimplSharpString name, ushort mode=0)
         {
             if (ChannelCount >= MaxChannels)
             {
@@ -286,7 +286,7 @@ namespace Cresmota
                 return;
             }
             Config.FriendlyName[ChannelCount] = name.ToString();
-            Config.Relay[ChannelCount] = 1;
+            Config.Relay[ChannelCount] = mode;
             ChannelCount++;
             DebugPrint($"> Channel [{ChannelCount:D2}] = {name}");
         }
