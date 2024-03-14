@@ -14,32 +14,29 @@ namespace DesktopTestApplication
     {
         static void Main(string[] args)
         {
-            //Cresmota.ManagedClientTest.Connect_Client().RunSynchronously();
             Cresmota.CresmotaDevice cresmota = new Cresmota.CresmotaDevice();
 
             cresmota.StartDebugging();
             
             cresmota.ProgramSlot = 1;
-            cresmota.ID = 1;
-            cresmota.DeviceName = "TestDevice";
+            cresmota.ID = 2;
+            cresmota.DeviceName = "DesktopTestApplication";
             cresmota.BrokerAddress = "mqttbroker";
             cresmota.Username = "mqttuser";
             cresmota.Password = "mqttpassword";
+            cresmota.ReportAs = CresmotaDevice.RELAYS;
 
             for (int i = 0; i < CresmotaDevice.MaxChannels; i++)
             {
-                cresmota.AddRelay($"Channel {i + 1:D2}");
+                if (i % 2 == 0)
+                    cresmota.AddBasic($"Channel {i + 1:D3}");
+                else
+                    cresmota.AddLight($"Channel {i + 1:D3}");
             }
 
-            //cresmota.Config.SetOption["30"] = 1;
-            //cresmota.Config.SetOption["68"] = 1;
-            //cresmota.Config.LightSubtype = 1;
-
             cresmota.Start();
-            Thread.Sleep(30000);
-            cresmota.Stop();    
-            Console.WriteLine("Press any key to exit...");
             _ = Console.Read();
+            cresmota.Stop();    
         }
     }
 }

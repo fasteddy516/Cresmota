@@ -49,7 +49,7 @@ namespace Cresmota
         public string DeviceName = "";
         
         [JsonProperty("fn", Order = 3)]
-        public string[] FriendlyName = new string[32];
+        public string[] FriendlyName = new string[CresmotaDevice.MaxChannels];
 
         [JsonProperty("hn", Order = 4)]
         public string HostName = "";
@@ -76,7 +76,7 @@ namespace Cresmota
         public string[] StatePayload = new string[4] { "OFF", "ON", "TOGGLE", "HOLD" };
 
         [JsonProperty("sw", Order = 12)]
-        public string SoftwareVersion = "13.4.0";
+        public string SoftwareVersion = CresmotaDevice.Version;
 
         [JsonProperty("t", Order = 13)]
         public string Topic;
@@ -88,7 +88,7 @@ namespace Cresmota
         public string[] TopicPrefix = new string[3] { "cmnd", "stat", "tele" };
 
         [JsonProperty("rl", Order = 16)]
-        public int[] Relay = new int[32];
+        public int[] Relay = new int[CresmotaDevice.MaxChannels];
 
         [JsonProperty("swc", Order = 17)]
         public int[] SwitchConfiguration = new int[28];
@@ -97,7 +97,7 @@ namespace Cresmota
         public string[] SwitchName = new string[28];
 
         [JsonProperty("btn", Order = 19)]
-        public int[] Button = new int[32];
+        public int[] Button = new int[CresmotaDevice.MaxChannels];
 
         [JsonProperty("so", Order = 20)]
         public Dictionary<string, int> SetOption = new Dictionary<string, int>
@@ -143,6 +143,7 @@ namespace Cresmota
             {
                 SwitchConfiguration[i] = -1;
             }
+            SetOption["68"] = 1; // enable mulit-channel pwn instead of color pwm by default
         }
 
         public override string ToString()

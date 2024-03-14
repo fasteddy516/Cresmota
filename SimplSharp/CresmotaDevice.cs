@@ -12,8 +12,12 @@ namespace Cresmota
 {
     public partial class CresmotaDevice : IDisposable
     {
+        public const string Version = "0.1.0";
+        
         public const ushort MaxProgramSlots = 10;
-        public const ushort MaxChannels = 32;
+        public const ushort MaxChannels = 128;
+        public const ushort RELAYS = 0;
+        public const ushort LIGHTS = 1;
 
         public TasmotaConfig Config = new TasmotaConfig();
         public TasmotaSensors Sensors { get; private set; } = new TasmotaSensors();
@@ -291,7 +295,7 @@ namespace Cresmota
             DebugPrint($"> Channel [{ChannelCount:D2}]:[{mode}] = {name} ");
         }
 
-        public void AddRelay(SimplSharpString name)
+        public void AddBasic(SimplSharpString name)
         {
             Add(name, RelayMode.Basic);
         }
@@ -303,7 +307,40 @@ namespace Cresmota
 
         public void AddShutter(SimplSharpString name)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("Shutters are not supported in Cresmota at this time.");
+        }
+
+        public void AddChannel(SimplSharpString channel)
+        {
+            string[] channelData = channel.ToString().Split(new char[] { ';' }, 2);
+            string name;
+            string mode;
+
+            if (channelData.Length == 2)
+            {
+                mode = channelData[0].ToLower();
+                name = channelData[1];
+            }
+            else
+            {
+                mode = "b";
+                name = channelData[0];
+            }
+
+            switch (mode)
+            {
+                case "b":
+                    AddBasic(name);
+                    break;
+                case "l":
+                    AddLight(name);
+                    break;
+                case "s":
+                    AddShutter(name);
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid mode [{mode}] specified in channel name string [{channelData}]");
+            }   
         }
         
         private async Task Client()
@@ -383,7 +420,7 @@ namespace Cresmota
                         {
                             DebugPrint($"Published testValue={testValue}");
                             testValue++;
-                            await managedMqttClient.EnqueueAsync("TestTopic", testValue.ToString());
+                            await managedMqttClient.EnqueueAsync($"[{ProgramSlot}][{ID}] testValue", testValue.ToString());
                         }
                         else
                         {

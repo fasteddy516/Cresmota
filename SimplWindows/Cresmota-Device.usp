@@ -35,7 +35,7 @@ SOFTWARE.
 
 
 /** CONSTANT DEFINITIONS *****************************************************/
-#define_constant MAX_CHANNELS 32
+#define_constant MAX_CHANNELS 128
 #define_constant MAX_NAME_LENGTH 50
 
 
@@ -124,6 +124,18 @@ digital_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				state[MAX_CHANNELS, MAX_CHANNELS]
 ;
 digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
@@ -132,8 +144,40 @@ digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				turn_on[MAX_CHANNELS], _skip_,
 				turn_off[MAX_CHANNELS, MAX_CHANNELS]
+;
+analog_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, value_in[MAX_CHANNELS, MAX_CHANNELS]
+;
+analog_output	_skip_, value_out[MAX_CHANNELS, MAX_CHANNELS]
 ;
 
 /** GLOBAL VARIABLE DEFINITIONS **********************************************/
@@ -151,7 +195,7 @@ function InitializeChannels()
 	{
 		if (Name[i] != "")
 		{
-			g_cresmota.AddRelay(Name[i]);
+			g_cresmota.AddChannel(Name[i]);
 		}
 		else
 		{
