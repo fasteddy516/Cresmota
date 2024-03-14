@@ -28,12 +28,12 @@ namespace DesktopTestApplication
 
             for (int i = 0; i < CresmotaDevice.MaxChannels; i++)
             {
-                cresmota.Add($"Relay {i + 1}", mode: 2);
+                cresmota.AddRelay($"Channel {i + 1:D2}");
             }
 
-            cresmota.Config.SetOption["30"] = 1;
-            cresmota.Config.SetOption["68"] = 1;
-            cresmota.Config.LightSubtype = 1;
+            //cresmota.Config.SetOption["30"] = 1;
+            //cresmota.Config.SetOption["68"] = 1;
+            //cresmota.Config.LightSubtype = 1;
 
             cresmota.Start();
             Thread.Sleep(30000);

@@ -35,7 +35,7 @@ SOFTWARE.
 
 
 /** CONSTANT DEFINITIONS *****************************************************/
-#define_constant MAX_CHANNELS 8
+#define_constant MAX_CHANNELS 32
 #define_constant MAX_NAME_LENGTH 50
 
 
@@ -108,7 +108,7 @@ integer_parameter ReportAs;
 	propShortDescription = "Report as relay(s) or light(s) to Home Assistant.";
 #end_parameter_properties
 
-string_parameter Name[MAX_CHANNELS, MAX_CHANNELS][MAX_NAME_LENGTH];
+string_parameter _skip_, _skip_, _skip_, Name[MAX_CHANNELS, MAX_CHANNELS][MAX_NAME_LENGTH];
 #begin_parameter_properties Name
 	propDefaultUnit = unitString;
 	propValidUnits = unitString;
@@ -119,12 +119,21 @@ string_parameter Name[MAX_CHANNELS, MAX_CHANNELS][MAX_NAME_LENGTH];
 
 /** I/O DEFINITIONS **********************************************************/
 digital_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				enable, debug, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				enable, debug
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				state[MAX_CHANNELS, MAX_CHANNELS]
 ;
 digital_output	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				enable_fb, debug_fb, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				enable_fb, debug_fb
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
+				turn_on[MAX_CHANNELS], _skip_,
+				turn_off[MAX_CHANNELS, MAX_CHANNELS]
 ;
 
 /** GLOBAL VARIABLE DEFINITIONS **********************************************/
@@ -142,7 +151,7 @@ function InitializeChannels()
 	{
 		if (Name[i] != "")
 		{
-			g_cresmota.Add(Name[i]);
+			g_cresmota.AddRelay(Name[i]);
 		}
 		else
 		{

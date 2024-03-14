@@ -278,7 +278,7 @@ namespace Cresmota
             DebugPrint("- DISPOSE complete");
         }
 
-        public void Add(SimplSharpString name, ushort mode=0)
+        public void Add(SimplSharpString name, RelayMode mode=RelayMode.Basic)
         {
             if (ChannelCount >= MaxChannels)
             {
@@ -286,9 +286,24 @@ namespace Cresmota
                 return;
             }
             Config.FriendlyName[ChannelCount] = name.ToString();
-            Config.Relay[ChannelCount] = mode;
+            Config.Relay[ChannelCount] = (int)mode;
             ChannelCount++;
-            DebugPrint($"> Channel [{ChannelCount:D2}] = {name}");
+            DebugPrint($"> Channel [{ChannelCount:D2}]:[{mode}] = {name} ");
+        }
+
+        public void AddRelay(SimplSharpString name)
+        {
+            Add(name, RelayMode.Basic);
+        }
+
+        public void AddLight(SimplSharpString name)
+        {
+            Add(name, RelayMode.Light);
+        }
+
+        public void AddShutter(SimplSharpString name)
+        {
+            throw new NotImplementedException();
         }
         
         private async Task Client()
@@ -305,7 +320,7 @@ namespace Cresmota
 
                     managedMqttClient.ApplicationMessageReceivedAsync += e =>
                     {
-                        DebugPrint($"Received application message {e.ApplicationMessage.Topic} = {e.ApplicationMessage.ConvertPayloadToString()}.");
+                        DebugPrint($"RX: {e.ApplicationMessage.Topic} = {e.ApplicationMessage.ConvertPayloadToString()}.");
                         return Task.CompletedTask;
                     };
 
@@ -352,8 +367,12 @@ namespace Cresmota
                             .Build())
                         .Build();
 
+                    foreach (string prefix in Config.TopicPrefix)
+                    {
+                        DebugPrint($"* Subscribing to {prefix}/{Config.Topic}/#");
+                        await managedMqttClient.SubscribeAsync($"{prefix}/{Config.Topic}/#");
+                    }
 
-                    await managedMqttClient.SubscribeAsync("TestSubscriptionTopic");
                     await managedMqttClient.StartAsync(options);
 
                     int testValue = 0;

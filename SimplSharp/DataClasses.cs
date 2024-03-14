@@ -32,6 +32,14 @@ namespace Cresmota
         }    
     }
 
+    public enum RelayMode
+    {
+        None = 0,
+        Basic = 1,
+        Light = 2,
+        Shutter = 3,
+    }
+
     public class TasmotaConfig
     {
         [JsonProperty("ip", Order = 1)]
