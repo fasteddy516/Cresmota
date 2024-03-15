@@ -40,6 +40,13 @@ namespace Cresmota
         Shutter = 3,
     }
 
+    public enum Prefix
+    {
+        Command = 0,
+        Status = 1,
+        Telemetry = 2,
+    }
+
     public class TasmotaConfig
     {
         [JsonProperty("ip", Order = 1)]
@@ -167,5 +174,64 @@ namespace Cresmota
         {
             return JsonConvert.SerializeObject(this);
         }
+    }
+
+    public class TasmotaInfo1
+    {
+        //{"Info1":{"Module":"Wemos Mini D1","Version":"13.4.0(tasmota)","FallbackTopic":"cmnd/DVES_7C040B_fb/","GroupTopic":"cmnd/tasmotas/"}}
+        [JsonProperty(Order = 1)]
+        public string Module = "";
+
+        [JsonProperty(Order = 2)]
+        public string Version = "";
+
+        [JsonProperty(Order = 3)]
+        public string FallbackTopic = "";
+
+        [JsonProperty(Order = 4)]
+        public string GroupTopic = "";
+
+        public override string ToString()
+        {
+            return $"{{\"Info1\":{JsonConvert.SerializeObject(this)}}}";
+        }
+    }
+
+    public class TasmotaInfo2
+    {
+        [JsonProperty(Order = 1)]
+        public string WebServerMode = "Admin";
+
+        [JsonProperty(Order = 2)]
+        public string Hostname = "";
+
+        [JsonProperty(Order = 3)]
+        public string IPAddress = "";
+
+        public override string ToString()
+        {
+            return $"{{\"Info2\":{JsonConvert.SerializeObject(this)}}}";
+        }
+    }
+
+    public class TasmotaInfo3
+    {
+        [JsonProperty(Order = 1)]
+        public string RestartReason = "Software/System restart";
+
+        [JsonProperty(Order = 2)]
+        public int BootCount = 1;
+
+        public override string ToString()
+        {
+            return $"{{\"Info3\":{JsonConvert.SerializeObject(this)}}}";
+        }
+    }
+
+    public class Channel
+    {
+        public ushort Power = 0;
+        public ushort Level = 0;
+        public RelayMode Mode = RelayMode.None;      
     }
 }

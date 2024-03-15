@@ -1,12 +1,14 @@
 ﻿using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Extensions.ManagedClient;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
 using Crestron.SimplSharp;
 using System.Diagnostics.Eventing.Reader;
 using System.Collections.Generic;
+using MQTTnet.Diagnostics;
 
 namespace Cresmota
 {
@@ -21,6 +23,10 @@ namespace Cresmota
 
         public TasmotaConfig Config = new TasmotaConfig();
         public TasmotaSensors Sensors { get; private set; } = new TasmotaSensors();
+
+        public TasmotaInfo1 Info1 = new TasmotaInfo1();
+        public TasmotaInfo2 Info2 = new TasmotaInfo2();
+        public TasmotaInfo3 Info3 = new TasmotaInfo3();
 
         private ushort _programSlot = 0;
         public ushort ProgramSlot
@@ -42,7 +48,7 @@ namespace Cresmota
                     return;
                 }
                 _programSlot = value;
-                DebugPrint($"* ProgramSlot set to {_programSlot}");
+                DebugPrint($"@ ProgramSlot set to {_programSlot}");
             }
         }
 
@@ -75,7 +81,7 @@ namespace Cresmota
                 }
                 _id = value;
                 _devices.Add(_id);
-                DebugPrint($"* ID set to {_id}");
+                DebugPrint($"@ ID set to {_id}");
             }
         }
 
@@ -99,7 +105,7 @@ namespace Cresmota
             set
             {
                 Config.DeviceName = value;
-                DebugPrint($"@ Set DeviceName to {value}");
+                DebugPrint($"@ DeviceName set to {value}");
             }
         }
 
@@ -154,9 +160,18 @@ namespace Cresmota
         private Task ClientTask { get; set; }
         private bool stopRequested = false;
 
+        public Channel[] Channels = new Channel[MaxChannels];
+
+
         public CresmotaDevice()
         {
             DebugPrint("+ CONSTRUCTOR started");
+            
+            for (int i = 0; i < Channels.Length; i++)
+            {
+                Channels[i] = new Channel();
+            }
+            
             DebugPrint("- CONSTRUCTOR complete");
         }
         
@@ -185,7 +200,6 @@ namespace Cresmota
                 return true;
             }
         }
-
 
         public void Start()
         {
@@ -222,22 +236,22 @@ namespace Cresmota
                 short lanAdapter = CrestronEthernetHelper.GetAdapterdIdForSpecifiedAdapterType(EthernetAdapterType.EthernetLANAdapter);
                 macAddress = CrestronEthernetHelper.GetEthernetParameter(CrestronEthernetHelper.ETHERNET_PARAMETER_TO_GET.GET_MAC_ADDRESS, lanAdapter);
                 ipAddress = CrestronEthernetHelper.GetEthernetParameter(CrestronEthernetHelper.ETHERNET_PARAMETER_TO_GET.GET_CURRENT_IP_ADDRESS, lanAdapter);
-                DebugPrint($"* LAN = {ipAddress} ({macAddress})");
+                DebugPrint($"@ LAN = {ipAddress} ({macAddress})");
             }
             macAddress = $"02{ProgramSlot:X2}{ID:X2}" + macAddress.Replace(":", "").ToUpper().Substring(6);
             Config.MACAddress = macAddress;
             Config.IPAddress = ipAddress;
-            DebugPrint($"* Cresmota MAC = {Config.MACAddress}");
+            DebugPrint($"@ MAC = {Config.MACAddress}");
 
             ClientID = new SimplSharpString($"Cresmota-{ProgramSlot:D2}-{ID:D2}");
-            DebugPrint($"* Cresmota MQTT Client ID = {ClientID}");
+            DebugPrint($"@ MQTT Client ID = {ClientID}");
 
             if (string.IsNullOrEmpty(Config.Topic))
             {
                 Config.Topic = ClientID.ToString();
             }
-            DebugPrint($"* Cresmota MQTT Topic = {Config.Topic}");
-            DebugPrint($"* Cresmota MQTT Broker = {BrokerAddress}:{BrokerPort}");
+            DebugPrint($"@ MQTT Topic = {Config.Topic}");
+            DebugPrint($"@ MQTT Broker = {BrokerAddress}:{BrokerPort}");
 
             if (string.IsNullOrEmpty(Config.FriendlyName[0]))
             {
@@ -248,6 +262,13 @@ namespace Cresmota
             {
                 Config.HostName = ClientID.ToString();
             }
+            
+            Info1.Module = Config.Model;
+            Info1.Version = $"{Version}(cresmota)";
+            Info1.FallbackTopic = $"{Config.TopicPrefix[(int)Prefix.Command]}/DVES_{Config.MACAddress.Substring(6)}_fb/";
+            Info1.GroupTopic = $"{Config.TopicPrefix[(int)Prefix.Command]}/tasmotas/";
+            Info2.IPAddress = Config.IPAddress;
+            Info2.Hostname = Config.HostName;
 
             ClientTask = Task.Run(Client);
 
@@ -291,8 +312,9 @@ namespace Cresmota
             }
             Config.FriendlyName[ChannelCount] = name.ToString();
             Config.Relay[ChannelCount] = (int)mode;
+            Channels[ChannelCount].Mode = mode;
             ChannelCount++;
-            DebugPrint($"> Channel [{ChannelCount:D2}]:[{mode}] = {name} ");
+            DebugPrint($"~ Channel [{ChannelCount:D3}]:[{mode}] = {name} ");
         }
 
         public void AddBasic(SimplSharpString name)
@@ -343,13 +365,73 @@ namespace Cresmota
             }   
         }
         
+        private void _processCommand(string endpoint, string payload="")
+        {
+            string directive = endpoint;
+            int channel = 1;
+
+            Match endpointData = Regex.Match(endpoint, @"^([a-zA-Z]+).*?(\d+)$");
+            if (endpointData.Success)
+            {
+                directive = endpointData.Groups[1].Value;
+                int.TryParse(endpointData.Groups[2].Value, out channel);
+            }
+
+            switch (directive)
+            {
+                case "Power":
+                    if (string.IsNullOrEmpty(payload))
+                    {
+                        DebugPrint($"> [RX] Power state request for channel {channel}");
+                    }
+                    else if (payload == "ON")
+                    {
+                        DebugPrint($"> [RX] Power ON channel {channel}");
+                    }
+                    else if (payload == "OFF")
+                    {
+                        DebugPrint($"> [RX] Power OFF channel {channel}");
+                    }
+                    else
+                    {
+                        DebugPrint($"! [RX] Invalid payload [{payload}] for Power command");
+                    }
+                    break;
+
+                case "Channel":
+                    if (string.IsNullOrEmpty(payload))
+                    {
+                        DebugPrint($"> [RX] Channel state request for channel {channel}");
+                    }
+                    else
+                    {
+                        DebugPrint($"> [RX] Set Channel {channel} to {payload}");
+                    }
+                    break;
+                
+                case "NoDelay":
+                    break;
+
+                case "STATUS":
+                    DebugPrint($"> [RX] STATUS [{endpoint}][{payload}] request");
+                    break;
+
+                case "STATE":
+                    DebugPrint($"> [RX] STATE [{endpoint}][{payload}] request");
+                    break;
+
+                default:
+                    DebugPrint($"> [RX] ? Unknown Directive [{directive}]");
+                    break;
+            }
+        }
+
         private async Task Client()
         {
             DebugPrint("+ CLIENT task started");
 
             try
             {
-
                 var mqttFactory = new MqttFactory();
 
                 using (var managedMqttClient = mqttFactory.CreateManagedMqttClient())
@@ -357,32 +439,74 @@ namespace Cresmota
 
                     managedMqttClient.ApplicationMessageReceivedAsync += e =>
                     {
-                        DebugPrint($"RX: {e.ApplicationMessage.Topic} = {e.ApplicationMessage.ConvertPayloadToString()}.");
+                        string payload = e.ApplicationMessage.ConvertPayloadToString();
+                        string[] topic = e.ApplicationMessage.Topic.Split(new char[] { '/' });
+                        string endpoint = topic[topic.Length - 1];
+
+                        if (topic[0] == Config.TopicPrefix[(int)Prefix.Command])
+                        {
+                            if (endpoint == "Backlog")
+                            {
+                                string[] commands = payload.Split(new char[] { ';' });
+                                foreach (string command in commands)
+                                {
+                                    string[] commandData = command.Split(new char[] { ' ' }, 2);
+                                    if (commandData.Length == 2)
+                                    {
+                                        _processCommand(commandData[0], commandData[1]);
+                                    }
+                                    else
+                                    {
+                                        _processCommand(command);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                _processCommand(endpoint, payload);
+                            }
+                        }
+
+                        else
+                        { 
+                            DebugPrint($"RX: ! Unhandled message [topic: {e.ApplicationMessage.Topic}] [payload: {payload}]");
+                        }
+
                         return Task.CompletedTask;
                     };
 
                     managedMqttClient.ConnectedAsync += async e =>
                     {
                         DebugPrint($"+ Connected to broker @ {BrokerAddress}:{BrokerPort}");
+                        DebugPrint("< [TX] Publish ONLINE state");
+                        await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/LWT", Config.OnlinePayload, retain: true);
                         if (_autoDiscovery)
                         {
 
                             DebugPrint("+ Autodiscovery ENABLED");
-                            DebugPrint($"  > Publishing to tasmota/discovery/{Config.MACAddress}");
+                            DebugPrint($"< [TX] Publish to tasmota/discovery/{Config.MACAddress}");
                             await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.MACAddress}/config", Config.ToString(), retain: true);
                             await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.MACAddress}/sensors", Sensors.ToString(), retain: true);
                         }
                         else
                         {
                             DebugPrint("- Autodiscovery DISABLED");
-                            DebugPrint($"  > Clearing any retained topics at tasmota/discovery/{Config.MACAddress}");
+                            DebugPrint($"* Clearing any retained topics at tasmota/discovery/{Config.MACAddress}");
                             await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.Topic}/config", "", retain: true);
                             await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.Topic}/config", "", retain: false);
                             await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.Topic}/sensors", "", retain: true);
                             await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.Topic}/sensors", "", retain: false);
                         }
-                        DebugPrint("* Publishing ONLINE state");
-                        await managedMqttClient.EnqueueAsync($"tele/{Config.Topic}/LWT", Config.OnlinePayload, retain: true);
+                        DebugPrint("< [TX] Publish INFO1, INFO2, INFO3");
+                        await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/INFO1", Info1.ToString(), retain: false);
+                        await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/INFO2", Info2.ToString(), retain: false);
+                        await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/INFO3", Info3.ToString(), retain: false);
+
+                        //publish power/state for all channels
+                        
+                        //publish 'state' thingy to telemetry topic only
+
+                        //start timer to publish 'state' unsolicited to telemetry every 300 seconds                    
                     };
 
                     managedMqttClient.DisconnectedAsync += e =>
@@ -404,11 +528,14 @@ namespace Cresmota
                             .Build())
                         .Build();
 
-                    foreach (string prefix in Config.TopicPrefix)
-                    {
-                        DebugPrint($"* Subscribing to {prefix}/{Config.Topic}/#");
-                        await managedMqttClient.SubscribeAsync($"{prefix}/{Config.Topic}/#");
-                    }
+                    DebugPrint($"* Subscribing to default topic [{Config.TopicPrefix[(int)Prefix.Command]}/{Config.Topic}/#]");
+                    await managedMqttClient.SubscribeAsync($"{Config.TopicPrefix[(int)Prefix.Command]}/{Config.Topic}/#");
+
+                    DebugPrint($"* Subscribing to fallback topic [{Info1.FallbackTopic}#]");
+                    await managedMqttClient.SubscribeAsync($"{Info1.FallbackTopic}#");
+
+                    DebugPrint($"* Subscribing to group topic [{Info1.GroupTopic}#]");
+                    await managedMqttClient.SubscribeAsync($"{Info1.GroupTopic}#");
 
                     await managedMqttClient.StartAsync(options);
 
@@ -418,13 +545,13 @@ namespace Cresmota
                     {
                         if (managedMqttClient.IsConnected)
                         {
-                            DebugPrint($"Published testValue={testValue}");
+                            //DebugPrint($"Published testValue={testValue}");
                             testValue++;
                             await managedMqttClient.EnqueueAsync($"[{ProgramSlot}][{ID}] testValue", testValue.ToString());
                         }
                         else
                         {
-                            DebugPrint("Waiting for connection...");
+                            DebugPrint("> Waiting for connection...");
                         }
                         Thread.Sleep(2500);
                     }
