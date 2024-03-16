@@ -26,7 +26,7 @@ namespace DesktopTestApplication
             cresmota.Password = "mqttpassword";
             cresmota.ReportAs = CresmotaDevice.RELAYS;
 
-            for (int i = 0; i < CresmotaDevice.MaxChannels; i++)
+            for (int i = 0; i < 8; i++)
             {
                 if (i % 2 == 0)
                     cresmota.AddBasic($"Channel {i + 1:D3}");

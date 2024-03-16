@@ -28,6 +28,8 @@ namespace Cresmota
         public TasmotaInfo2 Info2 = new TasmotaInfo2();
         public TasmotaInfo3 Info3 = new TasmotaInfo3();
 
+        public TasmotaState State = new TasmotaState();
+
         private ushort _programSlot = 0;
         public ushort ProgramSlot
         {
@@ -160,18 +162,9 @@ namespace Cresmota
         private Task ClientTask { get; set; }
         private bool stopRequested = false;
 
-        public Channel[] Channels = new Channel[MaxChannels];
-
-
         public CresmotaDevice()
         {
             DebugPrint("+ CONSTRUCTOR started");
-            
-            for (int i = 0; i < Channels.Length; i++)
-            {
-                Channels[i] = new Channel();
-            }
-            
             DebugPrint("- CONSTRUCTOR complete");
         }
         
@@ -270,6 +263,8 @@ namespace Cresmota
             Info2.IPAddress = Config.IPAddress;
             Info2.Hostname = Config.HostName;
 
+            State.StartTime = DateTime.Now;
+
             ClientTask = Task.Run(Client);
 
             DebugPrint("- START complete");
@@ -312,7 +307,7 @@ namespace Cresmota
             }
             Config.FriendlyName[ChannelCount] = name.ToString();
             Config.Relay[ChannelCount] = (int)mode;
-            Channels[ChannelCount].Mode = mode;
+            State.Channels[ChannelCount].Mode = mode;
             ChannelCount++;
             DebugPrint($"~ Channel [{ChannelCount:D3}]:[{mode}] = {name} ");
         }
@@ -478,6 +473,7 @@ namespace Cresmota
                     managedMqttClient.ConnectedAsync += async e =>
                     {
                         DebugPrint($"+ Connected to broker @ {BrokerAddress}:{BrokerPort}");
+                        State.MqttCount++;
                         DebugPrint("< [TX] Publish ONLINE state");
                         await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/LWT", Config.OnlinePayload, retain: true);
                         if (_autoDiscovery)
@@ -502,9 +498,10 @@ namespace Cresmota
                         await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/INFO2", Info2.ToString(), retain: false);
                         await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/INFO3", Info3.ToString(), retain: false);
 
-                        //publish power/state for all channels
-                        
-                        //publish 'state' thingy to telemetry topic only
+                        //publish power/state for all channels to status topic
+
+                        DebugPrint("< [TX] Publish STATE");
+                        await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/STATE", State.ToString(), retain: false);
 
                         //start timer to publish 'state' unsolicited to telemetry every 300 seconds                    
                     };

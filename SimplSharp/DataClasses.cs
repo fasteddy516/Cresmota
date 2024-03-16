@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Runtime.Remoting.Channels;
 
 namespace Cresmota
 {
@@ -228,10 +229,86 @@ namespace Cresmota
         }
     }
 
+    public class TasmotaState
+    {
+        [JsonIgnore]
+        public DateTime StartTime { get; internal set; } = DateTime.Now;
+        
+        [JsonProperty(Order = 1)]
+        public string Time
+        {
+            get { return DateTime.Now.ToString(format: "yyyy-MM-ddTHH:mm:ss"); }
+        }
+
+        [JsonProperty(Order = 2)]
+        public string Uptime
+        {
+            get { return $"{(DateTime.Now - StartTime).Days}T{(DateTime.Now - StartTime).ToString(format: @"hh\:mm\:ss")}"; }
+        }
+
+        [JsonProperty(Order = 3)]
+        public int UptimeSec
+        {
+            get { return (int)(DateTime.Now - StartTime).TotalSeconds; }
+        }
+
+        [JsonProperty(Order = 4)]
+        public int Heap = 26;
+
+        [JsonProperty(Order = 5)]
+        public string SleepMode = "Dynamic";
+
+        [JsonProperty(Order = 6)]
+        public int Sleep = 50;
+
+        [JsonProperty(Order = 7)]
+        public int LoadAvg = 19;
+
+        [JsonProperty(Order = 8)]
+        public int MqttCount = 0;
+
+        [JsonIgnore]
+        public Channel[] Channels = new Channel[CresmotaDevice.MaxChannels];
+        
+        public TasmotaState()
+        {
+            for (int i = 0; i < CresmotaDevice.MaxChannels; i++)
+            {
+                Channels[i] = new Channel();
+            }
+        }
+        
+        public override string ToString()
+        {
+            string state = JsonConvert.SerializeObject(this);
+
+            if (Channels.Length == 0)
+                return state;
+
+            state = state.Substring(0, state.Length - 1);
+
+            for (int i = 0; i < Channels.Length; i++)
+            {
+                if (Channels[i].Mode == RelayMode.None)
+                    break;
+                state += $",\"POWER{i + 1}\":";
+                state += (Channels[i].Power == 0) ? "\"OFF\"" : "\"ON\"";
+                if (Channels[i].Mode == RelayMode.Light)
+                {
+                    state += $",\"Channel{i + 1}\":";
+                    state += $"{Channels[i].Level}";
+                }
+            }
+            state += "}";
+
+            return state;
+        }
+    }
+
     public class Channel
     {
         public ushort Power = 0;
         public ushort Level = 0;
-        public RelayMode Mode = RelayMode.None;      
+        public RelayMode Mode = RelayMode.None;
     }
 }
