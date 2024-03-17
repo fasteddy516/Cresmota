@@ -9,6 +9,7 @@ using Crestron.SimplSharp;
 using System.Diagnostics.Eventing.Reader;
 using System.Collections.Generic;
 using MQTTnet.Diagnostics;
+using System.Collections.Concurrent;
 
 namespace Cresmota
 {
@@ -21,15 +22,14 @@ namespace Cresmota
         public const ushort RELAYS = 0;
         public const ushort LIGHTS = 1;
 
-        public TasmotaConfig Config = new TasmotaConfig();
-        public TasmotaSensors Sensors { get; private set; } = new TasmotaSensors();
+        public delegate void PowerRequestDelegateHandler(ushort channel, ushort state);
+        public PowerRequestDelegateHandler PowerRequestDelegate { get; set; }
 
-        public TasmotaInfo1 Info1 = new TasmotaInfo1();
-        public TasmotaInfo2 Info2 = new TasmotaInfo2();
-        public TasmotaInfo3 Info3 = new TasmotaInfo3();
+        public delegate void LevelRequestDelegateHandler(ushort channel, ushort level);
+        public LevelRequestDelegateHandler LevelRequestDelegate { get; set; }
 
-        public TasmotaState State = new TasmotaState();
-
+        public TasmotaData Data = new TasmotaData();
+        
         private ushort _programSlot = 0;
         public ushort ProgramSlot
         {
@@ -95,18 +95,18 @@ namespace Cresmota
         public SimplSharpString GroupTopic = "";
         public SimplSharpString Topic
         {
-            get { return new SimplSharpString(Config.Topic); }
-            set { Config.Topic = value.ToString(); }
+            get { return new SimplSharpString(Data.Topic); }
+            set { Data.Topic = value.ToString(); }
         }
         public string DeviceName
         {
             get
             {
-                return Config.DeviceName;
+                return Data.DeviceName;
             }
             set
             {
-                Config.DeviceName = value;
+                Data.DeviceName = value;
                 DebugPrint($"@ DeviceName set to {value}");
             }
         }
@@ -147,13 +147,13 @@ namespace Cresmota
                 if (SPlusBool.IsTrue(value))
                 {
                     _reportAsLights = true;
-                    Config.SetOption["30"] = 1;
+                    Data.SetOption["30"] = 1;
                     DebugPrint("@ Reporting as LIGHTS");
                 }
                 else
                 {
                     _reportAsLights = false;
-                    Config.SetOption["30"] = 0;
+                    Data.SetOption["30"] = 0;
                     DebugPrint("@ Reporting as RELAYS");
                 }
             }
@@ -162,28 +162,19 @@ namespace Cresmota
         private Task ClientTask { get; set; }
         private bool stopRequested = false;
 
+        private BlockingCollection<Message> OutgoingMessages = new BlockingCollection<Message>();
+
+
         public CresmotaDevice()
         {
             DebugPrint("+ CONSTRUCTOR started");
             DebugPrint("- CONSTRUCTOR complete");
         }
         
-        private bool _checkConfigValue(string name, string value)
+        private bool _checkConfigValue<T>(string name, T value)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                DebugPrint($"! {name} is not set");
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        private bool _checkConfigValue(string name, ushort value)
-        {
-            if (value == 0)
+            // Check if the value is null, the default for its type or an empty string
+            if (EqualityComparer<T>.Default.Equals(value, default) || (value is string str && str == ""))
             {
                 DebugPrint($"! {name} is not set");
                 return false;
@@ -212,12 +203,12 @@ namespace Cresmota
             bool validConfig = true;
             validConfig &= _checkConfigValue(nameof(ProgramSlot), ProgramSlot);
             validConfig &= _checkConfigValue(nameof(ID), ID);
-            validConfig &= _checkConfigValue(nameof(Config.DeviceName), Config.DeviceName);
+            validConfig &= _checkConfigValue(nameof(Data.DeviceName), Data.DeviceName);
             validConfig &= _checkConfigValue(nameof(BrokerAddress), BrokerAddress.ToString());
 
             if (!validConfig)
             {
-                DebugPrint("! Cannot START with invalid configuration");
+                DebugPrint("X Cannot START with invalid configuration");
                 return;
             }
 
@@ -232,38 +223,31 @@ namespace Cresmota
                 DebugPrint($"@ LAN = {ipAddress} ({macAddress})");
             }
             macAddress = $"02{ProgramSlot:X2}{ID:X2}" + macAddress.Replace(":", "").ToUpper().Substring(6);
-            Config.MACAddress = macAddress;
-            Config.IPAddress = ipAddress;
-            DebugPrint($"@ MAC = {Config.MACAddress}");
+            Data.MACAddress = macAddress;
+            Data.IPAddress = ipAddress;
+            DebugPrint($"@ MAC = {Data.MACAddress}");
 
             ClientID = new SimplSharpString($"Cresmota-{ProgramSlot:D2}-{ID:D2}");
             DebugPrint($"@ MQTT Client ID = {ClientID}");
 
-            if (string.IsNullOrEmpty(Config.Topic))
+            if (string.IsNullOrEmpty(Data.Topic))
             {
-                Config.Topic = ClientID.ToString();
+                Data.Topic = ClientID.ToString();
             }
-            DebugPrint($"@ MQTT Topic = {Config.Topic}");
+            DebugPrint($"@ MQTT Topic = {Data.Topic}");
             DebugPrint($"@ MQTT Broker = {BrokerAddress}:{BrokerPort}");
 
-            if (string.IsNullOrEmpty(Config.FriendlyName[0]))
+            if (string.IsNullOrEmpty(Data.FriendlyName[0]))
             {
-                Config.FriendlyName[0] = Config.DeviceName;
+                Data.FriendlyName[0] = Data.DeviceName;
             }
-            
-            if (string.IsNullOrEmpty(Config.HostName))
-            {
-                Config.HostName = ClientID.ToString();
-            }
-            
-            Info1.Module = Config.Model;
-            Info1.Version = $"{Version}(cresmota)";
-            Info1.FallbackTopic = $"{Config.TopicPrefix[(int)Prefix.Command]}/DVES_{Config.MACAddress.Substring(6)}_fb/";
-            Info1.GroupTopic = $"{Config.TopicPrefix[(int)Prefix.Command]}/tasmotas/";
-            Info2.IPAddress = Config.IPAddress;
-            Info2.Hostname = Config.HostName;
 
-            State.StartTime = DateTime.Now;
+            if (string.IsNullOrEmpty(Data.Hostname))
+            {
+                Data.Hostname = ClientID.ToString();
+            }
+
+            Data.StartTime = DateTime.Now;
 
             ClientTask = Task.Run(Client);
 
@@ -293,7 +277,18 @@ namespace Cresmota
             DebugPrint("+ DISPOSE started");
 
             Stop();
+
+            // Dispose the outgoing message queue
+            OutgoingMessages?.Dispose();
+            OutgoingMessages = null;
+
+            // Dispose the state update timer
+            stateUpdateTimer?.Dispose();
+            stateUpdateTimer = null;
+
             DebugStatusDelegate = null;
+            PowerRequestDelegate = null;
+            LevelRequestDelegate = null;
              
             DebugPrint("- DISPOSE complete");
         }
@@ -305,9 +300,9 @@ namespace Cresmota
                 DebugPrint($"! Cannot add {name} - ChannelCount is at maximum ({MaxChannels})");
                 return;
             }
-            Config.FriendlyName[ChannelCount] = name.ToString();
-            Config.Relay[ChannelCount] = (int)mode;
-            State.Channels[ChannelCount].Mode = mode;
+            Data.FriendlyName[ChannelCount] = name.ToString();
+            Data.Relay[ChannelCount] = (int)mode;
+            Data.Channels[ChannelCount].Mode = mode;
             ChannelCount++;
             DebugPrint($"~ Channel [{ChannelCount:D3}]:[{mode}] = {name} ");
         }
@@ -360,16 +355,81 @@ namespace Cresmota
             }   
         }
         
+        public void SetPower(ushort channel, ushort state)
+        {
+            if (channel < 1 || channel > ChannelCount)
+            {
+                DebugPrint($"! Invalid channel [{channel}] specified in SetPower request");
+                return;
+            }
+            Data.Channels[channel - 1].Power = state;
+            _publishPower(channel, state);
+        }
+
+        public void SetLevel(ushort channel, ushort level)
+        {
+            if (channel < 1 || channel > ChannelCount)
+            {
+                DebugPrint($"! Invalid channel [{channel}] specified in SetLevel request");
+                return;
+            }
+            if (Data.Channels[channel - 1].Mode != RelayMode.Light)
+            {
+                DebugPrint($"! Channel {channel} is not a light, cannot set level");
+                return;
+            }
+            Data.Channels[channel - 1].Power = SPlusBool.TRUE;
+            Data.Channels[channel - 1].Level = level;
+            _publishLevel(channel, level);
+        }
+
+        private void _publishPower(ushort channel, ushort state)
+        {
+            string endpoint = $"POWER{channel}";
+            string payload = (Data.Channels[channel - 1].Power == 0) ? "OFF" : "ON";
+
+            DebugPrint($"< [TX] Publish Power state for channel {channel} = {payload}");
+
+            OutgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Status]}/{Data.Topic}/RESULT", Payload = $"{{\"{endpoint}\":\"{payload}\"}}", Retained = false });
+            OutgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Status]}/{Data.Topic}/{endpoint}", Payload = payload, Retained = false });
+        }
+        
+        private void _publishLevel(ushort channel, ushort level, bool levelOnly=false)
+        {
+            string powerPayload = (levelOnly) ? "" : $"\"POWER{channel}\":\"ON\",";
+            string payload = $"{{{powerPayload}\"Channel{channel}\":{level}}}";
+
+            DebugPrint($"< [TX] Publish Level for channel {channel} = {level}");
+
+            OutgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Status]}/{Data.Topic}/RESULT", Payload = payload, Retained = false });
+        }
+
+        private void _publishState(bool telemetry=false, bool result=true)
+        {
+            string state = Data.State;
+
+            if (result)
+            {
+                DebugPrint("< [TX] Publish STATE to RESULT");
+                OutgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Status]}/{Data.Topic}/RESULT", Payload = state, Retained = false });
+            }
+            if (telemetry)
+            {
+                DebugPrint("< [TX] Publish STATE to TELEMETRY");
+                OutgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Telemetry]}/{Data.Topic}/STATE", Payload = state, Retained = false });
+            }
+        }
+        
         private void _processCommand(string endpoint, string payload="")
         {
             string directive = endpoint;
-            int channel = 1;
+            ushort channel = 1;
 
             Match endpointData = Regex.Match(endpoint, @"^([a-zA-Z]+).*?(\d+)$");
             if (endpointData.Success)
             {
                 directive = endpointData.Groups[1].Value;
-                int.TryParse(endpointData.Groups[2].Value, out channel);
+                ushort.TryParse(endpointData.Groups[2].Value, out channel);
             }
 
             switch (directive)
@@ -378,14 +438,17 @@ namespace Cresmota
                     if (string.IsNullOrEmpty(payload))
                     {
                         DebugPrint($"> [RX] Power state request for channel {channel}");
+                        _publishPower(channel, Data.Channels[channel - 1].Power);
                     }
                     else if (payload == "ON")
                     {
                         DebugPrint($"> [RX] Power ON channel {channel}");
+                        PowerRequestDelegate?.Invoke(channel, SPlusBool.TRUE);
                     }
                     else if (payload == "OFF")
                     {
                         DebugPrint($"> [RX] Power OFF channel {channel}");
+                        PowerRequestDelegate?.Invoke(channel, SPlusBool.FALSE);
                     }
                     else
                     {
@@ -397,10 +460,20 @@ namespace Cresmota
                     if (string.IsNullOrEmpty(payload))
                     {
                         DebugPrint($"> [RX] Channel state request for channel {channel}");
+                        _publishLevel(channel, Data.Channels[channel - 1].Level, levelOnly: true);
                     }
                     else
                     {
-                        DebugPrint($"> [RX] Set Channel {channel} to {payload}");
+                        ushort level = 0;
+                        if (ushort.TryParse(payload, out level))
+                        {
+                            DebugPrint($"> [RX] Set Channel {channel} to {level}");
+                            LevelRequestDelegate?.Invoke(channel, level);
+                        }
+                        else
+                        {
+                            DebugPrint($"! [RX] Invalid payload [{payload}] for Channel command");
+                        }
                     }
                     break;
                 
@@ -408,11 +481,24 @@ namespace Cresmota
                     break;
 
                 case "STATUS":
-                    DebugPrint($"> [RX] STATUS [{endpoint}][{payload}] request");
+                    DebugPrint($"> [RX] STATUS [{payload}] request");
+                    switch (payload)
+                    {
+                        case "1":
+                            DebugPrint("< [TX] Publish STATUS1");
+                            OutgoingMessages.Add(Data.Status1Message);
+                            break;
+                        
+                        case "11":
+                            DebugPrint("< [TX] Publish STATUS11");
+                            OutgoingMessages.Add(Data.Status11Message);
+                            break;
+                    }
                     break;
 
                 case "STATE":
-                    DebugPrint($"> [RX] STATE [{endpoint}][{payload}] request");
+                    DebugPrint($"> [RX] STATE request");
+                    _publishState();
                     break;
 
                 default:
@@ -421,6 +507,8 @@ namespace Cresmota
             }
         }
 
+        private Timer stateUpdateTimer;
+        
         private async Task Client()
         {
             DebugPrint("+ CLIENT task started");
@@ -431,6 +519,7 @@ namespace Cresmota
 
                 using (var managedMqttClient = mqttFactory.CreateManagedMqttClient())
                 {
+                    async Task publishMessage(Message msg) => await managedMqttClient.EnqueueAsync(msg.Topic, msg.Payload, retain: msg.Retained);
 
                     managedMqttClient.ApplicationMessageReceivedAsync += e =>
                     {
@@ -438,7 +527,7 @@ namespace Cresmota
                         string[] topic = e.ApplicationMessage.Topic.Split(new char[] { '/' });
                         string endpoint = topic[topic.Length - 1];
 
-                        if (topic[0] == Config.TopicPrefix[(int)Prefix.Command])
+                        if (topic[0] == Data.TopicPrefix[(int)Prefix.Command])
                         {
                             if (endpoint == "Backlog")
                             {
@@ -473,37 +562,45 @@ namespace Cresmota
                     managedMqttClient.ConnectedAsync += async e =>
                     {
                         DebugPrint($"+ Connected to broker @ {BrokerAddress}:{BrokerPort}");
-                        State.MqttCount++;
+                        Data.MqttCount++;
                         DebugPrint("< [TX] Publish ONLINE state");
-                        await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/LWT", Config.OnlinePayload, retain: true);
+                        await publishMessage(Data.OnlineMessage);
+
+                        Message configMessage = Data.DiscoveryConfigMessage;
+                        Message sensorsMessage = Data.DiscoverySensorsMessage;
+                        
                         if (_autoDiscovery)
                         {
 
                             DebugPrint("+ Autodiscovery ENABLED");
-                            DebugPrint($"< [TX] Publish to tasmota/discovery/{Config.MACAddress}");
-                            await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.MACAddress}/config", Config.ToString(), retain: true);
-                            await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.MACAddress}/sensors", Sensors.ToString(), retain: true);
+                            DebugPrint($"< [TX] Publish to tasmota/discovery/{Data.MACAddress}");
+                            await publishMessage(configMessage);
+                            await publishMessage(sensorsMessage);
                         }
                         else
                         {
                             DebugPrint("- Autodiscovery DISABLED");
-                            DebugPrint($"* Clearing any retained topics at tasmota/discovery/{Config.MACAddress}");
-                            await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.Topic}/config", "", retain: true);
-                            await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.Topic}/config", "", retain: false);
-                            await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.Topic}/sensors", "", retain: true);
-                            await managedMqttClient.EnqueueAsync($"tasmota/discovery/{Config.Topic}/sensors", "", retain: false);
+                            DebugPrint($"* Clearing any retained topics at tasmota/discovery/{Data.MACAddress}");
+                            await publishMessage(new Message { Topic = configMessage.Topic, Payload = "", Retained = true });
+                            await publishMessage(new Message { Topic = configMessage.Topic, Payload = "", Retained = false });
+                            await publishMessage(new Message { Topic = sensorsMessage.Topic, Payload = "", Retained = true });
+                            await publishMessage(new Message { Topic = sensorsMessage.Topic, Payload = "", Retained = false });
                         }
-                        DebugPrint("< [TX] Publish INFO1, INFO2, INFO3");
-                        await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/INFO1", Info1.ToString(), retain: false);
-                        await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/INFO2", Info2.ToString(), retain: false);
-                        await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/INFO3", Info3.ToString(), retain: false);
-
-                        //publish power/state for all channels to status topic
-
-                        DebugPrint("< [TX] Publish STATE");
-                        await managedMqttClient.EnqueueAsync($"{Config.TopicPrefix[(int)Prefix.Telemetry]}/{Config.Topic}/STATE", State.ToString(), retain: false);
+                        DebugPrint("< [TX] Publish STATE to TELEMETRY");
+                        await publishMessage(Data.StateMessage);
 
                         //start timer to publish 'state' unsolicited to telemetry every 300 seconds                    
+                        if (stateUpdateTimer != null)
+                        {
+                            stateUpdateTimer.Dispose();
+                            stateUpdateTimer = null;
+                        }
+                        stateUpdateTimer = new Timer((state) => _publishState(result: false, telemetry: true), null, 300000, 300000);
+
+                        DebugPrint("< [TX] Publish INFO1, INFO2, INFO3");
+                        await publishMessage(Data.Info1Message);
+                        await publishMessage(Data.Info2Message);
+                        await publishMessage(Data.Info3Message);
                     };
 
                     managedMqttClient.DisconnectedAsync += e =>
@@ -519,38 +616,37 @@ namespace Cresmota
                             .WithTcpServer(BrokerAddress.ToString(), BrokerPort)
                             .WithCredentials(Username.ToString(), Password.ToString())
                             .WithCleanSession()
-                            .WithWillTopic($"tele/{Config.Topic}/LWT")
-                            .WithWillPayload(Config.OfflinePayload)
+                            .WithWillTopic($"tele/{Data.Topic}/LWT")
+                            .WithWillPayload(Data.OfflinePayload)
                             .WithWillRetain(true)
                             .Build())
                         .Build();
 
-                    DebugPrint($"* Subscribing to default topic [{Config.TopicPrefix[(int)Prefix.Command]}/{Config.Topic}/#]");
-                    await managedMqttClient.SubscribeAsync($"{Config.TopicPrefix[(int)Prefix.Command]}/{Config.Topic}/#");
+                    DebugPrint($"* Subscribing to default topic [{Data.TopicPrefix[(int)Prefix.Command]}/{Data.Topic}/#]");
+                    await managedMqttClient.SubscribeAsync($"{Data.TopicPrefix[(int)Prefix.Command]}/{Data.Topic}/#");
 
-                    DebugPrint($"* Subscribing to fallback topic [{Info1.FallbackTopic}#]");
-                    await managedMqttClient.SubscribeAsync($"{Info1.FallbackTopic}#");
+                    DebugPrint($"* Subscribing to fallback topic [{Data.FallbackTopic}#]");
+                    await managedMqttClient.SubscribeAsync($"{Data.FallbackTopic}#");
 
-                    DebugPrint($"* Subscribing to group topic [{Info1.GroupTopic}#]");
-                    await managedMqttClient.SubscribeAsync($"{Info1.GroupTopic}#");
+                    DebugPrint($"* Subscribing to group topic [{Data.GroupTopic}#]");
+                    await managedMqttClient.SubscribeAsync($"{Data.GroupTopic}#");
 
                     await managedMqttClient.StartAsync(options);
-
-                    int testValue = 0;
 
                     while (!stopRequested)
                     {
                         if (managedMqttClient.IsConnected)
                         {
-                            //DebugPrint($"Published testValue={testValue}");
-                            testValue++;
-                            await managedMqttClient.EnqueueAsync($"[{ProgramSlot}][{ID}] testValue", testValue.ToString());
+                            if (OutgoingMessages.TryTake(out Message msg, 250))
+                            {
+                                await publishMessage(msg);
+                            }
                         }
                         else
                         {
-                            DebugPrint("> Waiting for connection...");
+                            DebugPrint("~ Waiting for connection...");
+                            Thread.Sleep(5000);
                         }
-                        Thread.Sleep(2500);
                     }
                 }
             }

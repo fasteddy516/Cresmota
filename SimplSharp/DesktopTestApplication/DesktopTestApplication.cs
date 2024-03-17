@@ -12,9 +12,12 @@ namespace DesktopTestApplication
 {
     internal class DesktopTestApplication
     {
+        public static Cresmota.CresmotaDevice cresmota = new Cresmota.CresmotaDevice();
+
         static void Main(string[] args)
         {
-            Cresmota.CresmotaDevice cresmota = new Cresmota.CresmotaDevice();
+            cresmota.PowerRequestDelegate += powerRequest;
+            cresmota.LevelRequestDelegate += levelRequest;
 
             cresmota.StartDebugging();
             
@@ -38,5 +41,16 @@ namespace DesktopTestApplication
             _ = Console.Read();
             cresmota.Stop();    
         }
+
+        public static void powerRequest(ushort channel, ushort state)
+        {
+            cresmota.SetPower(channel, state);            
+        }
+
+        public static void levelRequest(ushort channel, ushort level)
+        {
+            cresmota.SetLevel(channel, level);
+        }
+
     }
 }
