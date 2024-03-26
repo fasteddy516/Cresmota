@@ -19,6 +19,8 @@ namespace DesktopTestApplication
             cresmota.PowerRequestDelegate += powerRequest;
             cresmota.LevelRequestDelegate += levelRequest;
 
+            cresmota.DebugShowColor = true;
+            
             cresmota.StartDebugging();
             
             cresmota.ProgramSlot = 1;

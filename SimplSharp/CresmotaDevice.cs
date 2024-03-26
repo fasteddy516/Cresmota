@@ -28,7 +28,7 @@ namespace Cresmota
         public delegate void LevelRequestDelegateHandler(ushort channel, ushort level);
         public LevelRequestDelegateHandler LevelRequestDelegate { get; set; }
 
-        public TasmotaData Data = new TasmotaData();
+        public TasmotaData Data { get; set; } = new TasmotaData();
         
         private ushort _programSlot = 0;
         public ushort ProgramSlot
@@ -41,16 +41,16 @@ namespace Cresmota
             {
                 if (_programSlot > 0)
                 {
-                    DebugPrint($"! ProgramSlot already set to {_programSlot}, cannot change to {value}");
+                    DebugPrint($"! ProgramSlot already set to {_programSlot}, cannot change to {value}", DebugColor.Error);
                     return;
                 }
                 else if (value == 0 || value > MaxProgramSlots)
                 {
-                    DebugPrint($"! Requested ProgramSlot ({value}) is out of range (1-{MaxProgramSlots})");
+                    DebugPrint($"! Requested ProgramSlot ({value}) is out of range (1-{MaxProgramSlots})", DebugColor.Error);
                     return;
                 }
                 _programSlot = value;
-                DebugPrint($"@ ProgramSlot set to {_programSlot}");
+                DebugPrint($"@ ProgramSlot set to {_programSlot}", DebugColor.Info);
             }
         }
 
@@ -68,31 +68,31 @@ namespace Cresmota
             {
                 if (_id > 0)
                 {
-                    DebugPrint($"! ID already set to {_id}, cannot change to {value}");
+                    DebugPrint($"! ID already set to {_id}, cannot change to {value}", DebugColor.Error);
                     return;
                 }
                 else if (value == 0 || value > MaxDevices)
                 {
-                    DebugPrint($"! Requested ID ({value}) is out of range (1-{MaxDevices})");
+                    DebugPrint($"! Requested ID ({value}) is out of range (1-{MaxDevices})", DebugColor.Error);
                     return;
                 }
                 else if (_devices.Contains(value))
                 {
-                    DebugPrint($"! Requested ID ({value}) is already is use.");
+                    DebugPrint($"! Requested ID ({value}) is already is use.", DebugColor.Error);
                     return;
                 }
                 _id = value;
                 _devices.Add(_id);
-                DebugPrint($"@ ID set to {_id}");
+                DebugPrint($"@ ID set to {_id}", DebugColor.Info);
             }
         }
 
         public SimplSharpString ClientID { get; private set; } = "";
-        public SimplSharpString BrokerAddress = "";
-        public ushort BrokerPort = 1883;
-        public SimplSharpString Username = "";
-        public SimplSharpString Password = "";
-        public SimplSharpString GroupTopic = "";
+        public SimplSharpString BrokerAddress { get; set; } = "";
+        public ushort BrokerPort { get; set; } = 1883;
+        public SimplSharpString Username { get; set; } = "";
+        public SimplSharpString Password { get; set; } = "";
+        public SimplSharpString GroupTopic { get; set; } = "";
         public SimplSharpString Topic
         {
             get { return new SimplSharpString(Data.Topic); }
@@ -107,7 +107,7 @@ namespace Cresmota
             set
             {
                 Data.DeviceName = value;
-                DebugPrint($"@ DeviceName set to {value}");
+                DebugPrint($"@ DeviceName set to {value}", DebugColor.Info);
             }
         }
 
@@ -125,12 +125,12 @@ namespace Cresmota
                 if (SPlusBool.IsTrue(value))
                 {
                     _autoDiscovery = true;
-                    DebugPrint("@ AutoDiscovery is ENABLED");
+                    DebugPrint("@ AutoDiscovery is ENABLED", DebugColor.Start);
                 }
                 else
                 {
                     _autoDiscovery = false;
-                    DebugPrint("@ AutoDiscovery is DISABLED");
+                    DebugPrint("@ AutoDiscovery is DISABLED", DebugColor.Stop);
                 }
             }
         }
@@ -148,35 +148,35 @@ namespace Cresmota
                 {
                     _reportAsLights = true;
                     Data.SetOption["30"] = 1;
-                    DebugPrint("@ Reporting as LIGHTS");
+                    DebugPrint("@ Reporting as LIGHTS", DebugColor.Info);
                 }
                 else
                 {
                     _reportAsLights = false;
                     Data.SetOption["30"] = 0;
-                    DebugPrint("@ Reporting as RELAYS");
+                    DebugPrint("@ Reporting as RELAYS", DebugColor.Info);
                 }
             }
         }
 
-        private Task ClientTask { get; set; }
-        private bool stopRequested = false;
+        private Task _clientTask { get; set; }
+        private bool _stopRequested = false;
 
-        private BlockingCollection<Message> OutgoingMessages = new BlockingCollection<Message>();
+        private BlockingCollection<Message> _outgoingMessages = new BlockingCollection<Message>();
 
 
         public CresmotaDevice()
         {
-            DebugPrint("+ CONSTRUCTOR started");
-            DebugPrint("- CONSTRUCTOR complete");
+            DebugPrint("+ CONSTRUCTOR started", DebugColor.Start);
+            DebugPrint("- CONSTRUCTOR complete", DebugColor.Stop);
         }
         
-        private bool _checkConfigValue<T>(string name, T value)
+        private bool _CheckConfigValue<T>(string name, T value)
         {
             // Check if the value is null, the default for its type or an empty string
             if (EqualityComparer<T>.Default.Equals(value, default) || (value is string str && str == ""))
             {
-                DebugPrint($"! {name} is not set");
+                DebugPrint($"! {name} is not set", DebugColor.Error);
                 return false;
             }
             else
@@ -187,28 +187,28 @@ namespace Cresmota
 
         public void Start()
         {
-            DebugPrint("+ START requested");
+            DebugPrint("+ START requested", DebugColor.Start);
 
-            if (ClientTask != null)
+            if (_clientTask != null)
             {
-                DebugPrint("! START operation already completed");
+                DebugPrint("! START operation already completed", DebugColor.Error);
                 return;
             }
-            else if (stopRequested == true)
+            else if (_stopRequested == true)
             {
-                DebugPrint("! Cannot START until STOP operation is complete");
+                DebugPrint("! Cannot START until STOP operation is complete", DebugColor.Error);
                 return;
             }
 
             bool validConfig = true;
-            validConfig &= _checkConfigValue(nameof(ProgramSlot), ProgramSlot);
-            validConfig &= _checkConfigValue(nameof(ID), ID);
-            validConfig &= _checkConfigValue(nameof(Data.DeviceName), Data.DeviceName);
-            validConfig &= _checkConfigValue(nameof(BrokerAddress), BrokerAddress.ToString());
+            validConfig &= _CheckConfigValue(nameof(ProgramSlot), ProgramSlot);
+            validConfig &= _CheckConfigValue(nameof(ID), ID);
+            validConfig &= _CheckConfigValue(nameof(Data.DeviceName), Data.DeviceName);
+            validConfig &= _CheckConfigValue(nameof(BrokerAddress), BrokerAddress.ToString());
 
             if (!validConfig)
             {
-                DebugPrint("X Cannot START with invalid configuration");
+                DebugPrint("X Cannot START with invalid configuration", DebugColor.Error);
                 return;
             }
 
@@ -220,22 +220,22 @@ namespace Cresmota
                 short lanAdapter = CrestronEthernetHelper.GetAdapterdIdForSpecifiedAdapterType(EthernetAdapterType.EthernetLANAdapter);
                 macAddress = CrestronEthernetHelper.GetEthernetParameter(CrestronEthernetHelper.ETHERNET_PARAMETER_TO_GET.GET_MAC_ADDRESS, lanAdapter);
                 ipAddress = CrestronEthernetHelper.GetEthernetParameter(CrestronEthernetHelper.ETHERNET_PARAMETER_TO_GET.GET_CURRENT_IP_ADDRESS, lanAdapter);
-                DebugPrint($"@ LAN = {ipAddress} ({macAddress})");
+                DebugPrint($"@ LAN = {ipAddress} ({macAddress})", DebugColor.Info);
             }
             macAddress = $"02{ProgramSlot:X2}{ID:X2}" + macAddress.Replace(":", "").ToUpper().Substring(6);
             Data.MACAddress = macAddress;
             Data.IPAddress = ipAddress;
-            DebugPrint($"@ MAC = {Data.MACAddress}");
+            DebugPrint($"@ MAC = {Data.MACAddress}", DebugColor.Info);
 
             ClientID = new SimplSharpString($"Cresmota-{ProgramSlot:D2}-{ID:D2}");
-            DebugPrint($"@ MQTT Client ID = {ClientID}");
+            DebugPrint($"@ MQTT Client ID = {ClientID}", DebugColor.Info);
 
             if (string.IsNullOrEmpty(Data.Topic))
             {
                 Data.Topic = ClientID.ToString();
             }
-            DebugPrint($"@ MQTT Topic = {Data.Topic}");
-            DebugPrint($"@ MQTT Broker = {BrokerAddress}:{BrokerPort}");
+            DebugPrint($"@ MQTT Topic = {Data.Topic}", DebugColor.Info);
+            DebugPrint($"@ MQTT Broker = {BrokerAddress}:{BrokerPort}", DebugColor.Info);
 
             if (string.IsNullOrEmpty(Data.FriendlyName[0]))
             {
@@ -249,62 +249,62 @@ namespace Cresmota
 
             Data.StartTime = DateTime.Now;
 
-            ClientTask = Task.Run(Client);
+            _clientTask = Task.Run(_Client);
 
-            DebugPrint("- START complete");
+            DebugPrint("- START complete", DebugColor.Stop);
         }
 
         public void Stop()
         {
-            DebugPrint("+ STOP requested");
+            DebugPrint("+ STOP requested", DebugColor.Start);
 
-            stopRequested = true;
+            _stopRequested = true;
 
-            if (ClientTask != null)
+            if (_clientTask != null)
             {
-                ClientTask.Wait();
-                ClientTask.Dispose();
-                ClientTask = null;
+                _clientTask.Wait();
+                _clientTask.Dispose();
+                _clientTask = null;
             }
 
-            stopRequested = false;
+            _stopRequested = false;
 
-            DebugPrint("- STOP complete");
+            DebugPrint("- STOP complete", DebugColor.Stop);
         }
 
         public void Dispose()
         {
-            DebugPrint("+ DISPOSE started");
+            DebugPrint("+ DISPOSE started", DebugColor.Start);
 
             Stop();
 
             // Dispose the outgoing message queue
-            OutgoingMessages?.Dispose();
-            OutgoingMessages = null;
+            _outgoingMessages?.Dispose();
+            _outgoingMessages = null;
 
             // Dispose the state update timer
-            stateUpdateTimer?.Dispose();
-            stateUpdateTimer = null;
+            _stateUpdateTimer?.Dispose();
+            _stateUpdateTimer = null;
 
             DebugStatusDelegate = null;
             PowerRequestDelegate = null;
             LevelRequestDelegate = null;
              
-            DebugPrint("- DISPOSE complete");
+            DebugPrint("- DISPOSE complete", DebugColor.Stop);
         }
 
         public void Add(SimplSharpString name, RelayMode mode=RelayMode.Basic)
         {
             if (ChannelCount >= MaxChannels)
             {
-                DebugPrint($"! Cannot add {name} - ChannelCount is at maximum ({MaxChannels})");
+                DebugPrint($"! Cannot add {name} - ChannelCount is at maximum ({MaxChannels})", DebugColor.Error);
                 return;
             }
             Data.FriendlyName[ChannelCount] = name.ToString();
             Data.Relay[ChannelCount] = (int)mode;
             Data.Channels[ChannelCount].Mode = mode;
             ChannelCount++;
-            DebugPrint($"~ Channel [{ChannelCount:D3}]:[{mode}] = {name} ");
+            DebugPrint($"~ Channel [{ChannelCount:D3}]:[{mode}] = {name}", DebugColor.Info);
         }
 
         public void AddBasic(SimplSharpString name)
@@ -359,68 +359,68 @@ namespace Cresmota
         {
             if (channel < 1 || channel > ChannelCount)
             {
-                DebugPrint($"! Invalid channel [{channel}] specified in SetPower request");
+                DebugPrint($"! Invalid channel [{channel}] specified in SetPower request", DebugColor.Error);
                 return;
             }
             Data.Channels[channel - 1].Power = state;
-            _publishPower(channel, state);
+            _PublishPower(channel, state);
         }
 
         public void SetLevel(ushort channel, ushort level)
         {
             if (channel < 1 || channel > ChannelCount)
             {
-                DebugPrint($"! Invalid channel [{channel}] specified in SetLevel request");
+                DebugPrint($"! Invalid channel [{channel}] specified in SetLevel request", DebugColor.Error);
                 return;
             }
             if (Data.Channels[channel - 1].Mode != RelayMode.Light)
             {
-                DebugPrint($"! Channel {channel} is not a light, cannot set level");
+                DebugPrint($"! Channel {channel} is not a light, cannot set level", DebugColor.Error);
                 return;
             }
             Data.Channels[channel - 1].Power = SPlusBool.TRUE;
             Data.Channels[channel - 1].Level = level;
-            _publishLevel(channel, level);
+            _PublishLevel(channel, level);
         }
 
-        private void _publishPower(ushort channel, ushort state)
+        private void _PublishPower(ushort channel, ushort state)
         {
             string endpoint = $"POWER{channel}";
             string payload = (Data.Channels[channel - 1].Power == 0) ? "OFF" : "ON";
 
-            DebugPrint($"< [TX] Publish Power state for channel {channel} = {payload}");
+            DebugPrint($"< [TX] Publish Power state for channel {channel} = {payload}", DebugColor.TX);
 
-            OutgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Status]}/{Data.Topic}/RESULT", Payload = $"{{\"{endpoint}\":\"{payload}\"}}", Retained = false });
-            OutgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Status]}/{Data.Topic}/{endpoint}", Payload = payload, Retained = false });
+            _outgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Status]}/{Data.Topic}/RESULT", Payload = $"{{\"{endpoint}\":\"{payload}\"}}", Retained = false });
+            _outgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Status]}/{Data.Topic}/{endpoint}", Payload = payload, Retained = false });
         }
         
-        private void _publishLevel(ushort channel, ushort level, bool levelOnly=false)
+        private void _PublishLevel(ushort channel, ushort level, bool levelOnly=false)
         {
             string powerPayload = (levelOnly) ? "" : $"\"POWER{channel}\":\"ON\",";
             string payload = $"{{{powerPayload}\"Channel{channel}\":{level}}}";
 
-            DebugPrint($"< [TX] Publish Level for channel {channel} = {level}");
+            DebugPrint($"< [TX] Publish Level for channel {channel} = {level}", DebugColor.TX);
 
-            OutgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Status]}/{Data.Topic}/RESULT", Payload = payload, Retained = false });
+            _outgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Status]}/{Data.Topic}/RESULT", Payload = payload, Retained = false });
         }
 
-        private void _publishState(bool telemetry=false, bool result=true)
+        private void _PublishState(bool telemetry=false, bool result=true)
         {
             string state = Data.State;
 
             if (result)
             {
-                DebugPrint("< [TX] Publish STATE to RESULT");
-                OutgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Status]}/{Data.Topic}/RESULT", Payload = state, Retained = false });
+                DebugPrint("< [TX] Publish STATE to RESULT", DebugColor.TX);
+                _outgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Status]}/{Data.Topic}/RESULT", Payload = state, Retained = false });
             }
             if (telemetry)
             {
-                DebugPrint("< [TX] Publish STATE to TELEMETRY");
-                OutgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Telemetry]}/{Data.Topic}/STATE", Payload = state, Retained = false });
+                DebugPrint("< [TX] Publish STATE to TELEMETRY", DebugColor.TX);
+                _outgoingMessages.Add(new Message { Topic = $"{Data.TopicPrefix[(int)Prefix.Telemetry]}/{Data.Topic}/STATE", Payload = state, Retained = false });
             }
         }
         
-        private void _processCommand(string endpoint, string payload="")
+        private void _ProcessCommand(string endpoint, string payload="")
         {
             string directive = endpoint;
             ushort channel = 1;
@@ -437,42 +437,42 @@ namespace Cresmota
                 case "Power":
                     if (string.IsNullOrEmpty(payload))
                     {
-                        DebugPrint($"> [RX] Power state request for channel {channel}");
-                        _publishPower(channel, Data.Channels[channel - 1].Power);
+                        DebugPrint($"> [RX] Power state request for channel {channel}", DebugColor.RX);
+                        _PublishPower(channel, Data.Channels[channel - 1].Power);
                     }
                     else if (payload == "ON")
                     {
-                        DebugPrint($"> [RX] Power ON channel {channel}");
+                        DebugPrint($"> [RX] Power ON channel {channel}", DebugColor.RX);
                         PowerRequestDelegate?.Invoke(channel, SPlusBool.TRUE);
                     }
                     else if (payload == "OFF")
                     {
-                        DebugPrint($"> [RX] Power OFF channel {channel}");
+                        DebugPrint($"> [RX] Power OFF channel {channel}", DebugColor.RX);
                         PowerRequestDelegate?.Invoke(channel, SPlusBool.FALSE);
                     }
                     else
                     {
-                        DebugPrint($"! [RX] Invalid payload [{payload}] for Power command");
+                        DebugPrint($"! [RX] Invalid payload [{payload}] for Power command", DebugColor.Error);
                     }
                     break;
 
                 case "Channel":
                     if (string.IsNullOrEmpty(payload))
                     {
-                        DebugPrint($"> [RX] Channel state request for channel {channel}");
-                        _publishLevel(channel, Data.Channels[channel - 1].Level, levelOnly: true);
+                        DebugPrint($"> [RX] Channel state request for channel {channel}", DebugColor.RX);
+                        _PublishLevel(channel, Data.Channels[channel - 1].Level, levelOnly: true);
                     }
                     else
                     {
                         ushort level = 0;
                         if (ushort.TryParse(payload, out level))
                         {
-                            DebugPrint($"> [RX] Set Channel {channel} to {level}");
+                            DebugPrint($"> [RX] Set Channel {channel} to {level}", DebugColor.RX);
                             LevelRequestDelegate?.Invoke(channel, level);
                         }
                         else
                         {
-                            DebugPrint($"! [RX] Invalid payload [{payload}] for Channel command");
+                            DebugPrint($"! [RX] Invalid payload [{payload}] for Channel command", DebugColor.Error);
                         }
                     }
                     break;
@@ -481,37 +481,37 @@ namespace Cresmota
                     break;
 
                 case "STATUS":
-                    DebugPrint($"> [RX] STATUS [{payload}] request");
+                    DebugPrint($"> [RX] STATUS [{payload}] request", DebugColor.RX);
                     switch (payload)
                     {
                         case "1":
-                            DebugPrint("< [TX] Publish STATUS1");
-                            OutgoingMessages.Add(Data.Status1Message);
+                            DebugPrint("< [TX] Publish STATUS1", DebugColor.TX);
+                            _outgoingMessages.Add(Data.Status1Message);
                             break;
                         
                         case "11":
-                            DebugPrint("< [TX] Publish STATUS11");
-                            OutgoingMessages.Add(Data.Status11Message);
+                            DebugPrint("< [TX] Publish STATUS11", DebugColor.TX);
+                            _outgoingMessages.Add(Data.Status11Message);
                             break;
                     }
                     break;
 
                 case "STATE":
-                    DebugPrint($"> [RX] STATE request");
-                    _publishState();
+                    DebugPrint($"> [RX] STATE request", DebugColor.RX);
+                    _PublishState();
                     break;
 
                 default:
-                    DebugPrint($"> [RX] ? Unknown Directive [{directive}]");
+                    DebugPrint($"> [RX] ? Unknown Directive [{directive}]", DebugColor.Error);
                     break;
             }
         }
 
-        private Timer stateUpdateTimer;
+        private Timer _stateUpdateTimer;
         
-        private async Task Client()
+        private async Task _Client()
         {
-            DebugPrint("+ CLIENT task started");
+            DebugPrint("+ CLIENT task started", DebugColor.Start);
 
             try
             {
@@ -519,7 +519,7 @@ namespace Cresmota
 
                 using (var managedMqttClient = mqttFactory.CreateManagedMqttClient())
                 {
-                    async Task publishMessage(Message msg) => await managedMqttClient.EnqueueAsync(msg.Topic, msg.Payload, retain: msg.Retained);
+                    async Task __PublishMessage(Message msg) => await managedMqttClient.EnqueueAsync(msg.Topic, msg.Payload, retain: msg.Retained);
 
                     managedMqttClient.ApplicationMessageReceivedAsync += e =>
                     {
@@ -537,23 +537,23 @@ namespace Cresmota
                                     string[] commandData = command.Split(new char[] { ' ' }, 2);
                                     if (commandData.Length == 2)
                                     {
-                                        _processCommand(commandData[0], commandData[1]);
+                                        _ProcessCommand(commandData[0], commandData[1]);
                                     }
                                     else
                                     {
-                                        _processCommand(command);
+                                        _ProcessCommand(command);
                                     }
                                 }
                             }
                             else
                             {
-                                _processCommand(endpoint, payload);
+                                _ProcessCommand(endpoint, payload);
                             }
                         }
 
                         else
                         { 
-                            DebugPrint($"RX: ! Unhandled message [topic: {e.ApplicationMessage.Topic}] [payload: {payload}]");
+                            DebugPrint($"RX: ! Unhandled message [topic: {e.ApplicationMessage.Topic}] [payload: {payload}]", DebugColor.Error);
                         }
 
                         return Task.CompletedTask;
@@ -561,10 +561,10 @@ namespace Cresmota
 
                     managedMqttClient.ConnectedAsync += async e =>
                     {
-                        DebugPrint($"+ Connected to broker @ {BrokerAddress}:{BrokerPort}");
+                        DebugPrint($"+ Connected to broker @ {BrokerAddress}:{BrokerPort}", DebugColor.Start);
                         Data.MqttCount++;
-                        DebugPrint("< [TX] Publish ONLINE state");
-                        await publishMessage(Data.OnlineMessage);
+                        DebugPrint("< [TX] Publish ONLINE state", DebugColor.TX);
+                        await __PublishMessage(Data.OnlineMessage);
 
                         Message configMessage = Data.DiscoveryConfigMessage;
                         Message sensorsMessage = Data.DiscoverySensorsMessage;
@@ -572,40 +572,40 @@ namespace Cresmota
                         if (_autoDiscovery)
                         {
 
-                            DebugPrint("+ Autodiscovery ENABLED");
-                            DebugPrint($"< [TX] Publish to tasmota/discovery/{Data.MACAddress}");
-                            await publishMessage(configMessage);
-                            await publishMessage(sensorsMessage);
+                            DebugPrint("+ Autodiscovery ENABLED", DebugColor.Info);
+                            DebugPrint($"< [TX] Publish to tasmota/discovery/{Data.MACAddress}", DebugColor.TX);
+                            await __PublishMessage(configMessage);
+                            await __PublishMessage(sensorsMessage);
                         }
                         else
                         {
-                            DebugPrint("- Autodiscovery DISABLED");
-                            DebugPrint($"* Clearing any retained topics at tasmota/discovery/{Data.MACAddress}");
-                            await publishMessage(new Message { Topic = configMessage.Topic, Payload = "", Retained = true });
-                            await publishMessage(new Message { Topic = configMessage.Topic, Payload = "", Retained = false });
-                            await publishMessage(new Message { Topic = sensorsMessage.Topic, Payload = "", Retained = true });
-                            await publishMessage(new Message { Topic = sensorsMessage.Topic, Payload = "", Retained = false });
+                            DebugPrint("- Autodiscovery DISABLED", DebugColor.Info);
+                            DebugPrint($"* Clearing any retained topics at tasmota/discovery/{Data.MACAddress}", DebugColor.TX);
+                            await __PublishMessage(new Message { Topic = configMessage.Topic, Payload = "", Retained = true });
+                            await __PublishMessage(new Message { Topic = configMessage.Topic, Payload = "", Retained = false });
+                            await __PublishMessage(new Message { Topic = sensorsMessage.Topic, Payload = "", Retained = true });
+                            await __PublishMessage(new Message { Topic = sensorsMessage.Topic, Payload = "", Retained = false });
                         }
-                        DebugPrint("< [TX] Publish STATE to TELEMETRY");
-                        await publishMessage(Data.StateMessage);
+                        DebugPrint("< [TX] Publish STATE to TELEMETRY", DebugColor.TX);
+                        await __PublishMessage(Data.StateMessage);
 
                         //start timer to publish 'state' unsolicited to telemetry every 300 seconds                    
-                        if (stateUpdateTimer != null)
+                        if (_stateUpdateTimer != null)
                         {
-                            stateUpdateTimer.Dispose();
-                            stateUpdateTimer = null;
+                            _stateUpdateTimer.Dispose();
+                            _stateUpdateTimer = null;
                         }
-                        stateUpdateTimer = new Timer((state) => _publishState(result: false, telemetry: true), null, 300000, 300000);
+                        _stateUpdateTimer = new Timer((state) => _PublishState(result: false, telemetry: true), null, 300000, 300000);
 
-                        DebugPrint("< [TX] Publish INFO1, INFO2, INFO3");
-                        await publishMessage(Data.Info1Message);
-                        await publishMessage(Data.Info2Message);
-                        await publishMessage(Data.Info3Message);
+                        DebugPrint("< [TX] Publish INFO1, INFO2, INFO3", DebugColor.TX);
+                        await __PublishMessage(Data.Info1Message);
+                        await __PublishMessage(Data.Info2Message);
+                        await __PublishMessage(Data.Info3Message);
                     };
 
                     managedMqttClient.DisconnectedAsync += e =>
                     {
-                        DebugPrint("The managed MQTT client is DISCONNECTED.");
+                        DebugPrint("! The managed MQTT client is DISCONNECTED.", DebugColor.Error);
                         return Task.CompletedTask;
                     };
 
@@ -622,29 +622,29 @@ namespace Cresmota
                             .Build())
                         .Build();
 
-                    DebugPrint($"* Subscribing to default topic [{Data.TopicPrefix[(int)Prefix.Command]}/{Data.Topic}/#]");
+                    DebugPrint($"* Subscribing to default topic [{Data.TopicPrefix[(int)Prefix.Command]}/{Data.Topic}/#]", DebugColor.TX);
                     await managedMqttClient.SubscribeAsync($"{Data.TopicPrefix[(int)Prefix.Command]}/{Data.Topic}/#");
 
-                    DebugPrint($"* Subscribing to fallback topic [{Data.FallbackTopic}#]");
+                    DebugPrint($"* Subscribing to fallback topic [{Data.FallbackTopic}#]", DebugColor.TX);
                     await managedMqttClient.SubscribeAsync($"{Data.FallbackTopic}#");
 
-                    DebugPrint($"* Subscribing to group topic [{Data.GroupTopic}#]");
+                    DebugPrint($"* Subscribing to group topic [{Data.GroupTopic}#]", DebugColor.TX);
                     await managedMqttClient.SubscribeAsync($"{Data.GroupTopic}#");
 
                     await managedMqttClient.StartAsync(options);
 
-                    while (!stopRequested)
+                    while (!_stopRequested)
                     {
                         if (managedMqttClient.IsConnected)
                         {
-                            if (OutgoingMessages.TryTake(out Message msg, 250))
+                            if (_outgoingMessages.TryTake(out Message msg, 250))
                             {
-                                await publishMessage(msg);
+                                await __PublishMessage(msg);
                             }
                         }
                         else
                         {
-                            DebugPrint("~ Waiting for connection...");
+                            DebugPrint("~ Waiting for connection...", ANSIColor.Yellow);
                             Thread.Sleep(5000);
                         }
                     }
@@ -652,13 +652,13 @@ namespace Cresmota
             }
             catch (ThreadAbortException)
             {
-                DebugPrint("! CLIENT task aborted");
+                DebugPrint("! CLIENT task aborted", DebugColor.Error);
             }
             catch (TaskCanceledException)
             {
-                DebugPrint("! CLIENT task cancelled");
+                DebugPrint("! CLIENT task cancelled", DebugColor.Error);
             }
-            DebugPrint("- CLIENT task exited");
+            DebugPrint("- CLIENT task exited", DebugColor.Stop);
         }
     }
 }
