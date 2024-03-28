@@ -175,9 +175,9 @@ analog_input	_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
 				_skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_, _skip_,
-				_skip_, _skip_, value_in[MAX_CHANNELS, MAX_CHANNELS]
+				_skip_, _skip_, level_in[MAX_CHANNELS, MAX_CHANNELS]
 ;
-analog_output	_skip_, value_out[MAX_CHANNELS, MAX_CHANNELS]
+analog_output	_skip_, level_out[MAX_CHANNELS, MAX_CHANNELS]
 ;
 
 /** GLOBAL VARIABLE DEFINITIONS **********************************************/
@@ -240,11 +240,52 @@ release debug
 	}
 }
 
+change state
+{
+	integer i;
+	
+	i = getLastModifiedArrayIndex();
+	
+	if (g_initialized)
+	{
+		g_cresmota.SetPower(i, state[i]);
+	}
+}
+
+change level_in
+{
+	integer i;
+	
+	i = getLastModifiedArrayIndex();
+	
+	if (g_initialized)
+	{
+		g_cresmota.SetLevel(i, level_in[i]);
+	}
+}
+
 
 /** SIMPL# CALLBACK FUNCTIONS ************************************************/
 callback function UpdateDebugStatus(integer value)
 {
 	debug_fb = (value > 0);
+}
+
+callback function PowerRequest(integer channel, integer state)
+{
+	if (state)
+	{
+		pulse(1, turn_on[channel]);
+	}
+	else
+	{
+		pulse(1, turn_off[channel]);
+	}
+}
+
+callback function LevelRequest(integer channel, integer level)
+{
+	level_out[channel] = level;
 }
 
 
@@ -256,6 +297,9 @@ function main()
 	debug_fb = off;
 
 	RegisterDelegate(g_cresmota, DebugStatusDelegate, UpdateDebugStatus);
+	RegisterDelegate(g_cresmota, PowerRequestDelegate, PowerRequest);
+	RegisterDelegate(g_cresmota, LevelRequestDelegate, LevelRequest);
+
 
 	WaitForInitializationComplete();
 

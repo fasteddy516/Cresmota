@@ -19,7 +19,7 @@ namespace DesktopTestApplication
             cresmota.PowerRequestDelegate += powerRequest;
             cresmota.LevelRequestDelegate += levelRequest;
 
-            cresmota.DebugShowColor = true;
+            cresmota.DebugWithColor = true;
             
             cresmota.StartDebugging();
             

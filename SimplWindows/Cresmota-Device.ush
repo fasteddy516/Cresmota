@@ -1100,11 +1100,11 @@
   InputList2SigType129=Analog
   InputList2Cue130=[~UNUSED~]
   InputList2SigType130=Analog
-  InputList2Cue131=value_in[#]
+  InputList2Cue131=level_in[#]
   InputList2SigType131=Analog
   OutputList2Cue1=[~UNUSED~]
   OutputList2SigType1=Analog
-  OutputList2Cue2=value_out[#]
+  OutputList2Cue2=level_out[#]
   OutputList2SigType2=Analog
   ParamCue1=[Reference Name]
   ParamCue2=ID
@@ -2954,8 +2954,4 @@
   DV=
   NoS=False
   VVS=0
-[END]
-[BEGIN]
-ObjTp=Status
-HeaderCompatible=False
 [END]

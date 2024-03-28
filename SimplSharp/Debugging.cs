@@ -51,9 +51,9 @@ namespace Cresmota
             }
         }
 
-        public bool DebugShowColor { get; set; } = false;
-        public bool DebugShowTimestamp { get; set; } = true;
-        public bool DebugShowIDStamp { get; set; } = true;
+        public bool DebugWithColor { get; set; } = false;
+        public bool DebugWithTimestamp { get; set; } = true;
+        public bool DebugWithIDStamp { get; set; } = true;
 
         public static class DebugColor
         {
@@ -71,10 +71,10 @@ namespace Cresmota
             {
                 const string reset = "\u001b[0m";
 
-                string device = (DebugShowIDStamp) ? $"(CRESMOTA-{ProgramSlot:D2}:{ID:D2}-S#) " : "";
-                string timestamp = (DebugShowTimestamp) ? $"{DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss")} " : "";
+                string device = (DebugWithIDStamp) ? $"(CRESMOTA-{ProgramSlot:D2}:{ID:D2}-S#) " : "";
+                string timestamp = (DebugWithTimestamp) ? $"{DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss")} " : "";
 
-                if (DebugShowColor)
+                if (DebugWithColor)
                 {
                     string msgcolor = (color == ANSIColor.None) ? $"\u001b[97m" : $"\u001b[{(int)color}m";
                     DebugOutput($"\u001b[90m{timestamp}{device}{msgcolor}{msg}{reset}");
